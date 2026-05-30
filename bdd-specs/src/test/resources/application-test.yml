@@ -1,0 +1,42 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:orderdb-test;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  flyway:
+    enabled: false
+
+inventory:
+  base-url: http://localhost:8081
+
+wms:
+  base-url: http://localhost:8082
+
+otel:
+  exporter:
+    endpoint: http://localhost:4317
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      inventoryService:
+        failureRateThreshold: 50
+        slowCallRateThreshold: 100
+        slidingWindowSize: 3
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 3
+        waitDurationInOpenState: 1s
+        permittedNumberOfCallsInHalfOpenState: 2
+      wmsService:
+        failureRateThreshold: 50
+        slowCallRateThreshold: 100
+        slidingWindowSize: 3
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 3
+        waitDurationInOpenState: 1s
+        permittedNumberOfCallsInHalfOpenState: 2

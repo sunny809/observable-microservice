@@ -24,6 +24,7 @@ public class PlaceOrderSteps {
 
     static final WireMockServer inventoryMock = new WireMockServer(8081);
     static final WireMockServer wmsMock = new WireMockServer(8082);
+    static final WireMockServer tmsMock = new WireMockServer(8083);
 
     @Before
     public void setup() {
@@ -33,8 +34,12 @@ public class PlaceOrderSteps {
         if (!wmsMock.isRunning()) {
             wmsMock.start();
         }
+        if (!tmsMock.isRunning()) {
+            tmsMock.start();
+        }
         inventoryMock.resetAll();
         wmsMock.resetAll();
+        tmsMock.resetAll();
     }
 
     @Given("inventory service returns reservation success")

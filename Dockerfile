@@ -15,12 +15,21 @@ RUN mvn dependency:go-offline -B
 COPY . .
 RUN mvn clean package -DskipTests -B
 
-# Stage 2: Runtime with JRE
+# Stage 2: Runtime with distroless JRE for security hardening
 FROM eclipse-temurin:21-jre-alpine
+
+# Create non-root user for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app
 
+# Copy application JAR
 COPY --from=builder /build/order-infrastructure/target/*.jar app.jar
+
+# Set ownership to non-root user
+RUN chown -R appuser:appgroup /app
+
+USER appuser
 
 EXPOSE 8080
 

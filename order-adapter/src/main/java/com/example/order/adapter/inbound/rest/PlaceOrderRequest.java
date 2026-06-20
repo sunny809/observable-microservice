@@ -6,7 +6,18 @@ import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * DTO for the place order REST request.
+ *
+ * <p>Validated by Jakarta Bean Validation and mapped to
+ * {@link com.example.order.application.port.in.PlaceOrderCommand}
+ * by {@link PlaceOrderMapper}.
+ *
+ * @see OrderController#placeOrder
+ * @see PlaceOrderMapper
+ */
 public class PlaceOrderRequest {
+
     @NotBlank
     private String customerId;
 
@@ -41,6 +52,9 @@ public class PlaceOrderRequest {
         this.items = items;
     }
 
+    /**
+     * Nested DTO for a single order item within a place order request.
+     */
     public static class OrderItemRequest {
         @NotBlank
         private String sku;

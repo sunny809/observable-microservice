@@ -1,4 +1,10 @@
+otel:
+  exporter:
+    endpoint: http://localhost:4317
+
 spring:
+  kafka:
+    bootstrap-servers: localhost:9092
   application:
     name: order-service
   datasource:
@@ -39,15 +45,35 @@ inventory:
 wms:
   base-url: http://localhost:8082
 
-otel:
-  exporter:
-    endpoint: http://localhost:4317
+tms:
+  base-url: http://localhost:8083
+
+app:
+  kafka:
+    wms:
+      topic: wms.shipment.instructions
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+      show-components: always
+    metrics:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      slo:
+        http: 50ms,100ms,200ms,500ms,1s,2s,5s
+      percentiles-histogram:
+        http.server.requests: true
 
 resilience4j:
   circuitbreaker:
@@ -70,11 +96,22 @@ resilience4j:
         minimumNumberOfCalls: 5
         waitDurationInOpenState: 30s
         permittedNumberOfCallsInHalfOpenState: 3
+      tmsService:
+        failureRateThreshold: 50
+        slowCallRateThreshold: 80
+        slowCallDurationThreshold: 5s
+        slidingWindowSize: 10
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 3
   timelimiter:
     instances:
       inventoryService:
         timeoutDuration: 10s
       wmsService:
+        timeoutDuration: 10s
+      tmsService:
         timeoutDuration: 10s
   retry:
     instances:
@@ -91,3 +128,17 @@ resilience4j:
         waitDuration: 500ms
         enableExponentialBackoff: true
         exponentialBackoffMultiplier: 2
+      tmsService:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+  ratelimiter:
+    instances:
+      orderPlacement:
+        limitForPeriod: 100
+        limitRefreshPeriod: 1m
+        timeoutDuration: 500ms

@@ -61,6 +61,17 @@
                 <artifactId>archunit-junit5-engine</artifactId>
                 <version>1.3.0</version>
             </dependency>
+            <!-- o11y-kit module dependencies -->
+            <dependency>
+                <groupId>io.o11y.kit</groupId>
+                <artifactId>o11y-kit-spring-boot-starter</artifactId>
+                <version>0.2.0-alpha</version>
+            </dependency>
+            <dependency>
+                <groupId>io.o11y.kit</groupId>
+                <artifactId>o11y-kit-api</artifactId>
+                <version>0.2.0-alpha</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

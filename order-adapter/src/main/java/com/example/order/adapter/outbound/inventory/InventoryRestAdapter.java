@@ -1,5 +1,7 @@
 package com.example.order.adapter.outbound.inventory;
 
+import java.util.concurrent.CompletableFuture;
+
 import com.example.order.adapter.config.InventoryAdapterProperties;
 import com.example.order.application.domain.InventoryReservation;
 import com.example.order.application.domain.ReservationStatus;
@@ -52,34 +54,35 @@ public class InventoryRestAdapter implements InventoryPort {
     @Override
     @CircuitBreaker(name = "inventoryService", fallbackMethod = "handleOccupyFallback")
     @Retry(name = "inventoryService")
-    public InventoryReservation occupy(ReservationRequest request) {
+    public CompletableFuture<InventoryReservation> occupy(ReservationRequest request) {
         Span span = tracer.spanBuilder(SpanNames.INVENTORY_OCCUPY).startSpan();
         try (Scope scope = span.makeCurrent()) {
-            InventoryApiResponse response = webClient.post()
+            return webClient.post()
                     .uri("/api/inventory/reserve")
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(request)
                     .retrieve()
                     .bodyToMono(InventoryApiResponse.class)
-                    .block();
-            if (response == null || !response.success) {
-                span.setAttribute("inventory.reserve.success", false);
-                return null;
-            }
-            span.setAttribute("inventory.reserve.success", true);
-            return new InventoryReservation(response.reservationId, request.getSku(), request.getQuantity(), request.getOrderId(), ReservationStatus.PENDING, java.time.Instant.now(), null);
-        } catch (Exception ex) {
-            span.recordException(ex);
-            log.error("Failed to reserve inventory", ex);
-            throw ex;
-        } finally {
-            span.end();
+                    .flatMap(response -> {
+                        if (response == null || !response.success) {
+                            span.setAttribute("inventory.reserve.success", false);
+                            return reactor.core.publisher.Mono.justOrEmpty((InventoryReservation) null);
+                        }
+                        span.setAttribute("inventory.reserve.success", true);
+                        return reactor.core.publisher.Mono.just(new InventoryReservation(response.reservationId, request.getSku(), request.getQuantity(), request.getOrderId(), ReservationStatus.PENDING, java.time.Instant.now(), null));
+                    })
+                    .doOnError(ex -> {
+                        span.recordException(ex);
+                        log.error("Failed to reserve inventory", ex);
+                    })
+                    .doFinally(sig -> span.end())
+                    .toFuture();
         }
     }
 
-    public InventoryReservation handleOccupyFallback(ReservationRequest request, Throwable throwable) {
+    public CompletableFuture<InventoryReservation> handleOccupyFallback(ReservationRequest request, Throwable throwable) {
         log.warn("Inventory occupy fallback for order {}", request.getOrderId(), throwable);
-        throw new RuntimeException("Inventory service unavailable", throwable);
+        return CompletableFuture.failedFuture(new RuntimeException("Inventory service unavailable", throwable));
     }
 
     /**
@@ -91,26 +94,25 @@ public class InventoryRestAdapter implements InventoryPort {
     @Override
     @CircuitBreaker(name = "inventoryService", fallbackMethod = "handleReleaseFallback")
     @Retry(name = "inventoryService")
-    public void release(String reservationId) {
+    public CompletableFuture<Void> release(String reservationId) {
         Span span = tracer.spanBuilder(SpanNames.INVENTORY_RELEASE).startSpan();
         try (Scope scope = span.makeCurrent()) {
-            webClient.delete()
+            return webClient.delete()
                     .uri(uriBuilder -> uriBuilder.path("/api/inventory/reserve/{reservationId}").build(reservationId))
                     .retrieve()
                     .bodyToMono(Void.class)
-                    .block();
-        } catch (Exception ex) {
-            span.recordException(ex);
-            log.error("Failed to release inventory", ex);
-            throw ex;
-        } finally {
-            span.end();
+                    .doOnError(ex -> {
+                        span.recordException(ex);
+                        log.error("Failed to release inventory", ex);
+                    })
+                    .doFinally(sig -> span.end())
+                    .toFuture();
         }
     }
 
-    public void handleReleaseFallback(String reservationId, Throwable throwable) {
+    public CompletableFuture<Void> handleReleaseFallback(String reservationId, Throwable throwable) {
         log.warn("Release fallback for reservation {}", reservationId, throwable);
-        throw new RuntimeException("Inventory release failed", throwable);
+        return CompletableFuture.failedFuture(new RuntimeException("Inventory release failed", throwable));
     }
 
     /**
@@ -122,28 +124,27 @@ public class InventoryRestAdapter implements InventoryPort {
     @Override
     @CircuitBreaker(name = "inventoryService", fallbackMethod = "handleConfirmFallback")
     @Retry(name = "inventoryService")
-    public void confirm(ConfirmReservationCommand request) {
+    public CompletableFuture<Void> confirm(ConfirmReservationCommand request) {
         Span span = tracer.spanBuilder(SpanNames.INVENTORY_CONFIRM).startSpan();
         try (Scope scope = span.makeCurrent()) {
-            webClient.post()
+            return webClient.post()
                     .uri("/api/inventory/confirm")
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(request)
                     .retrieve()
                     .bodyToMono(Void.class)
-                    .block();
-        } catch (Exception ex) {
-            span.recordException(ex);
-            log.error("Failed to confirm inventory", ex);
-            throw ex;
-        } finally {
-            span.end();
+                    .doOnError(ex -> {
+                        span.recordException(ex);
+                        log.error("Failed to confirm inventory", ex);
+                    })
+                    .doFinally(sig -> span.end())
+                    .toFuture();
         }
     }
 
-    public void handleConfirmFallback(ConfirmReservationCommand request, Throwable throwable) {
+    public CompletableFuture<Void> handleConfirmFallback(ConfirmReservationCommand request, Throwable throwable) {
         log.warn("Inventory confirm fallback for reservation {}", request.getReservationId(), throwable);
-        throw new RuntimeException("Inventory confirmation failed", throwable);
+        return CompletableFuture.failedFuture(new RuntimeException("Inventory confirmation failed", throwable));
     }
 
     private static class InventoryApiResponse {

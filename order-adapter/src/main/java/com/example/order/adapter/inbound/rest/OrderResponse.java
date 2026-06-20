@@ -2,6 +2,14 @@ package com.example.order.adapter.inbound.rest;
 
 import com.example.order.application.domain.OrderStatus;
 
+/**
+ * DTO for the place order REST response.
+ *
+ * <p>Returned with HTTP 201 Created and a {@code Location} header
+ * pointing to the newly created order.
+ *
+ * @see OrderController#placeOrder
+ */
 public class OrderResponse {
     private String orderId;
     private OrderStatus status;

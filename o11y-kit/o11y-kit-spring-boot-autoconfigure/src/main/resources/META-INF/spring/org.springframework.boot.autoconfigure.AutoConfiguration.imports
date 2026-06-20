@@ -1,0 +1,4 @@
+io.o11y.kit.autoconfigure.HttpMetricsAutoConfiguration
+io.o11y.kit.autoconfigure.ObservationWebMvcAutoConfiguration
+io.o11y.kit.autoconfigure.ObservationWebFluxAutoConfiguration
+io.o11y.kit.autoconfigure.HttpClientObservationAutoConfiguration

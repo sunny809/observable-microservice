@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!--
+        SpotBugs baseline exclude filter.
+        Entries below suppress known findings that are acceptable in the current codebase.
+        New code should aim for zero SpotBugs warnings not covered here.
+
+        Strategy: baseline-respecting; new warnings fail the build.
+        Drain this list over subsequent sprints (target: empty by v1.0-GA).
+    -->
+
+    <!-- O11yKitProperties: EI_EXPOSE_REP / EI_EXPOSE_REP2
+         Spring @ConfigurationProperties uses mutable POJOs by design —
+         getter/setter exposure is intentional for property binding.
+         Not a real encapsulation risk in a Spring-managed context. -->
+    <Match>
+        <Class name="io.o11y.kit.autoconfigure.O11yKitProperties"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="io.o11y.kit.autoconfigure.O11yKitProperties$Client"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+</FindBugsFilter>

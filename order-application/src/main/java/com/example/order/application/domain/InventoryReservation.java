@@ -4,6 +4,19 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Immutable value object representing an inventory reservation for a single SKU.
+ *
+ * <p>A reservation tracks the lifecycle of inventory held for an order:
+ * {@code PENDING} → {@code CONFIRMED} (when WMS accepts) or {@code RELEASED}
+ * (when compensation is triggered).
+ *
+ * <p>Created by {@link #pending(String, int, String)} and transitioned
+ * by {@link #confirm()} and {@link #release()}.
+ *
+ * @see ReservationStatus
+ * @see OrderPlacementSaga
+ */
 public class InventoryReservation {
     private final String reservationId;
     private final String sku;

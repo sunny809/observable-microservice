@@ -7,9 +7,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class OrderStatusTest {
 
     @Test
-    void testValuesReturnsAllFourConstants() {
+    void testValuesReturnsAllSevenConstants() {
         OrderStatus[] values = OrderStatus.values();
-        assertEquals(4, values.length);
+        assertEquals(7, values.length);
     }
 
     @Test
@@ -17,6 +17,9 @@ class OrderStatusTest {
         assertEquals(OrderStatus.CREATED, OrderStatus.valueOf("CREATED"));
         assertEquals(OrderStatus.RESERVED, OrderStatus.valueOf("RESERVED"));
         assertEquals(OrderStatus.WMS_ACKED, OrderStatus.valueOf("WMS_ACKED"));
+        assertEquals(OrderStatus.WMS_PICKED, OrderStatus.valueOf("WMS_PICKED"));
+        assertEquals(OrderStatus.TMS_DISPATCHED, OrderStatus.valueOf("TMS_DISPATCHED"));
+        assertEquals(OrderStatus.TMS_REJECTED, OrderStatus.valueOf("TMS_REJECTED"));
         assertEquals(OrderStatus.REJECTED, OrderStatus.valueOf("REJECTED"));
     }
 

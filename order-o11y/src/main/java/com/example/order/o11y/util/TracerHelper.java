@@ -19,6 +19,8 @@ public final class TracerHelper {
         public static final String INVENTORY_RELEASE = "inventory.release";
         public static final String INVENTORY_CONFIRM = "inventory.confirm";
         public static final String WMS_SEND = "wms.send_instruction";
+        public static final String WMS_PICKING_COMPLETE = "wms.picking_complete";
+        public static final String TMS_SEND = "tms.send_instruction";
 
         private SpanNames() {
             throw new UnsupportedOperationException("Utility class");

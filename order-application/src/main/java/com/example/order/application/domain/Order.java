@@ -8,6 +8,20 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Aggregate root representing a customer order in the order placement saga.
+ *
+ * <p>An {@code Order} tracks its lifecycle through {@link OrderStatus} transitions:
+ * {@code CREATED} → {@code RESERVED} → {@code WMS_ACKED} or {@code REJECTED}.
+ * The order is created after successful inventory reservation and updated
+ * asynchronously when the WMS responds.
+ *
+ * <p>Each order is uniquely identified by an {@code orderId} and deduplicated
+ * by its {@code idempotencyKey}.
+ *
+ * @see OrderStatus
+ * @see OrderPlacementSaga
+ */
 public class Order {
     private final String orderId;
     private final String customerId;

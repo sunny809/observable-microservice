@@ -1,0 +1,74 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.o11y.kit</groupId>
+        <artifactId>o11y-kit</artifactId>
+        <version>0.2.0-alpha</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>o11y-kit-spring-boot-autoconfigure</artifactId>
+    <name>o11y-kit-spring-boot-autoconfigure</name>
+    <description>Spring Boot AutoConfiguration for o11y-kit</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.o11y.kit</groupId>
+            <artifactId>o11y-kit-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.o11y.kit</groupId>
+            <artifactId>o11y-kit-micrometer</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.o11y.kit</groupId>
+            <artifactId>o11y-kit-spring-webmvc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.o11y.kit</groupId>
+            <artifactId>o11y-kit-spring-webflux</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

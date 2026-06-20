@@ -1,0 +1,17 @@
+apiVersion: v2
+name: order-service
+version: 0.1.0
+appVersion: "0.1.0-SNAPSHOT"
+description: A production-ready Spring Boot order service demonstrating hexagonal architecture, Saga pattern, circuit breakers, and distributed tracing.
+type: application
+keywords:
+  - microservice
+  - spring-boot
+  - hexagonal-architecture
+  - saga-pattern
+home: https://github.com/example/order-demo
+sources:
+  - https://github.com/example/order-demo
+maintainers:
+  - name: Order Service Team
+    email: team@example.com

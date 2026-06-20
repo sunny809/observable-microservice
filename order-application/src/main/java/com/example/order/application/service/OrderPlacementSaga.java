@@ -5,25 +5,32 @@ import com.example.order.application.domain.InsufficientInventoryException;
 import com.example.order.application.domain.InventoryReservation;
 import com.example.order.application.domain.Order;
 import com.example.order.application.domain.OrderStatus;
+import com.example.order.application.domain.TmsInstructionRequiredEvent;
 import com.example.order.application.domain.WmsInstructionRequiredEvent;
+import com.example.order.application.domain.WmsPickingCompletedEvent;
 import com.example.order.application.port.in.OrderItem;
 import com.example.order.application.port.in.OrderPlacedResult;
 import com.example.order.application.port.in.PlaceOrderCommand;
 import com.example.order.application.port.in.PlaceOrderUseCase;
-import com.example.order.application.port.out.IdempotencyCachePort;
 import com.example.order.application.port.out.ConfirmReservationCommand;
 import com.example.order.application.port.out.DomainEventPublisher;
+import com.example.order.application.port.out.IdempotencyCachePort;
 import com.example.order.application.port.out.InventoryConfirmationScheduler;
 import com.example.order.application.port.out.InventoryPort;
 import com.example.order.application.port.out.OrderRepositoryPort;
 import com.example.order.application.port.out.ReservationRequest;
 import com.example.order.application.port.out.SagaLogPort;
+import com.example.order.application.port.out.TmsAck;
+import com.example.order.application.port.out.TmsPort;
+import com.example.order.application.port.out.TmsShipmentInstruction;
+import com.example.order.application.port.out.WmsAck;
 import com.example.order.application.port.out.WmsPort;
 import com.example.order.application.port.out.WmsShipmentInstruction;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
@@ -34,24 +41,37 @@ import org.springframework.transaction.support.TransactionTemplate;
  * Orchestrates the order placement saga using the Saga pattern.
  *
  * <p>The saga coordinates multiple distributed operations (inventory reservation,
- * order persistence, WMS instruction) with compensating transactions on failure.
- * The {@code placeOrder} method runs within a single Spring transaction. After
- * the transaction commits, the {@link #onWmsRequired(WmsInstructionRequiredEvent)}
- * listener fires asynchronously to send the WMS instruction. Because the async
- * callback runs on a Reactor thread without an active transaction, all database
- * operations in the callback are wrapped with {@link TransactionTemplate}.
+ * order persistence, WMS instruction, WMS picking, TMS dispatch) with compensating
+ * transactions on failure. The {@code placeOrder} method runs within a single
+ * Spring transaction. After the transaction commits, async event listeners fire
+ * to handle WMS and TMS operations.
+ *
+ * <p>Order status lifecycle:
+ * <pre>
+ * CREATED → WMS_ACKED → WMS_PICKED → TMS_DISPATCHED
+ *    ↓         ↓            ↓              ↓
+ * REJECTED  REJECTED   TMS_REJECTED   (terminal)
+ * </pre>
+ *
+ * <p>Because async callbacks run on Reactor threads without an active Spring
+ * transaction, all database operations in callbacks are wrapped with
+ * {@link TransactionTemplate}.
  */
 @Service
 public class OrderPlacementSaga implements PlaceOrderUseCase {
 
     private static final String SAGA_STEP_ORDER_CREATED = "ORDER_CREATED";
     private static final String SAGA_STEP_WMS_ACKED = "WMS_ACKED";
+    private static final String SAGA_STEP_WMS_PICKED = "WMS_PICKED";
+    private static final String SAGA_STEP_TMS_DISPATCHED = "TMS_DISPATCHED";
+    private static final String SAGA_STEP_TMS_REJECTED = "TMS_REJECTED";
 
     private final OrderRepositoryPort orderRepository;
     private final InventoryPort inventoryPort;
     private final SagaLogPort sagaLogPort;
     private final DomainEventPublisher eventPublisher;
     private final WmsPort wmsPort;
+    private final TmsPort tmsPort;
     private final InventoryConfirmationScheduler confirmationScheduler;
     private final TransactionTemplate transactionTemplate;
     private final IdempotencyCachePort idempotencyCache;
@@ -61,6 +81,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                               SagaLogPort sagaLogPort,
                               DomainEventPublisher eventPublisher,
                               WmsPort wmsPort,
+                              TmsPort tmsPort,
                               InventoryConfirmationScheduler confirmationScheduler,
                               TransactionTemplate transactionTemplate,
                               IdempotencyCachePort idempotencyCache) {
@@ -69,6 +90,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
         this.sagaLogPort = sagaLogPort;
         this.eventPublisher = eventPublisher;
         this.wmsPort = wmsPort;
+        this.tmsPort = tmsPort;
         this.confirmationScheduler = confirmationScheduler;
         this.transactionTemplate = transactionTemplate;
         this.idempotencyCache = idempotencyCache;
@@ -129,7 +151,123 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
     }
 
     /**
-     * Reserves inventory for all items in the order. If any reservation fails,
+     * Handles the WMS instruction asynchronously after the order transaction
+     * has committed. Uses {@link TransactionTemplate} to execute database
+     * operations because the callback runs on a Reactor thread outside any
+     * Spring transaction context.
+     *
+     * <p>If WMS accepts the instruction, the inventory is confirmed and the
+     * order status is updated to {@code WMS_ACKED}. If WMS rejects or the
+     * call fails, all reservations are released and the order status is set
+     * to {@code REJECTED}.
+     *
+     * @param event the event containing order and reservation information
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onWmsRequired(WmsInstructionRequiredEvent event) {
+        InventoryReservation primaryReservation = event.getReservations().get(0);
+        List<InventoryReservation> allReservations = event.getReservations();
+        confirmationScheduler.scheduleConfirmation(primaryReservation);
+
+        wmsPort.sendInstruction(event.getInstruction())
+                .thenCompose(ack -> {
+                    if (ack.isAccepted()) {
+                        return inventoryPort.confirm(new ConfirmReservationCommand(primaryReservation.getReservationId()))
+                                .thenRun(() -> transactionTemplate.executeWithoutResult(status -> {
+                                    orderRepository.updateStatus(event.getOrderId(), OrderStatus.WMS_ACKED);
+                                    sagaLogPort.recordStep(event.getOrderId(), SAGA_STEP_WMS_ACKED, String.format("WMS accepted instruction %s", ack.getMessageId()));
+                                }));
+                    } else {
+                        return releaseAllAsync(allReservations)
+                                .thenRun(() -> transactionTemplate.executeWithoutResult(status -> {
+                                    orderRepository.updateStatus(event.getOrderId(), OrderStatus.REJECTED);
+                                    sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(), String.format("WMS rejected: %s", ack.getMessageId()));
+                                }));
+                    }
+                })
+                .exceptionally(ex -> {
+                    transactionTemplate.executeWithoutResult(status -> {
+                        releaseAll(allReservations);
+                        orderRepository.updateStatus(event.getOrderId(), OrderStatus.REJECTED);
+                        sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(), String.format("WMS transport failed: %s", ex.getMessage()));
+                    });
+                    return null;
+                });
+    }
+
+    /**
+     * Handles WMS picking completion asynchronously after the WMS confirms
+     * that order picking is complete. Updates the order status to
+     * {@code WMS_PICKED} and publishes a {@link TmsInstructionRequiredEvent}
+     * to trigger the TMS dispatch phase.
+     *
+     * @param event the event containing order and reservation information
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onWmsPickingCompleted(WmsPickingCompletedEvent event) {
+        InventoryReservation primaryReservation = event.getReservations().get(0);
+        List<InventoryReservation> allReservations = event.getReservations();
+
+        transactionTemplate.executeWithoutResult(status -> {
+            orderRepository.updateStatus(event.getOrderId(), OrderStatus.WMS_PICKED);
+            sagaLogPort.recordStep(event.getOrderId(), SAGA_STEP_WMS_PICKED,
+                    String.format("WMS confirmed picking complete for reservation %s", primaryReservation.getReservationId()));
+        });
+
+        eventPublisher.publish(new TmsInstructionRequiredEvent(event.getOrderId(),
+                new TmsShipmentInstruction(event.getOrderId(), primaryReservation.getReservationId()),
+                allReservations));
+    }
+
+    /**
+     * Handles the TMS instruction asynchronously after the WMS picking
+     * is complete. Uses {@link TransactionTemplate} to execute database
+     * operations because the callback runs on a Reactor thread outside any
+     * Spring transaction context.
+     *
+     * <p>If TMS accepts the instruction, the order status is updated to
+     * {@code TMS_DISPATCHED}. If TMS rejects or the call fails, all
+     * reservations are released and the order status is set to
+     * {@code TMS_REJECTED}.
+     *
+     * @param event the event containing order and reservation information
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onTmsRequired(TmsInstructionRequiredEvent event) {
+        InventoryReservation primaryReservation = event.getReservations().get(0);
+        List<InventoryReservation> allReservations = event.getReservations();
+
+        tmsPort.sendInstruction(event.getInstruction())
+                .thenCompose(ack -> {
+                    if (ack.isAccepted()) {
+                        return CompletableFuture.completedFuture(null)
+                                .thenRun(() -> transactionTemplate.executeWithoutResult(status -> {
+                            orderRepository.updateStatus(event.getOrderId(), OrderStatus.TMS_DISPATCHED);
+                            sagaLogPort.recordStep(event.getOrderId(), SAGA_STEP_TMS_DISPATCHED,
+                                    String.format("TMS accepted dispatch instruction %s", ack.getMessageId()));
+                        }));
+                    } else {
+                        return releaseAllAsync(allReservations)
+                                .thenRun(() -> transactionTemplate.executeWithoutResult(status -> {
+                                    orderRepository.updateStatus(event.getOrderId(), OrderStatus.TMS_REJECTED);
+                                    sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(),
+                                            String.format("TMS rejected: %s", ack.getMessageId()));
+                                }));
+                    }
+                })
+                .exceptionally(ex -> {
+                    transactionTemplate.executeWithoutResult(status -> {
+                        releaseAll(allReservations);
+                        orderRepository.updateStatus(event.getOrderId(), OrderStatus.TMS_REJECTED);
+                        sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(),
+                                String.format("TMS transport failed: %s", ex.getMessage()));
+                    });
+                    return null;
+                });
+    }
+
+    /**
+     * Reserves inventory for all items in the order synchronously. If any reservation fails,
      * all previously reserved items are released (compensation).
      *
      * @param command the place order command
@@ -141,7 +279,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
         List<InventoryReservation> reservations = new ArrayList<>();
         for (OrderItem item : command.getItems()) {
             InventoryReservation reservation = inventoryPort.occupy(
-                    new ReservationRequest(item.getSku(), item.getQuantity(), orderId));
+                    new ReservationRequest(item.getSku(), item.getQuantity(), orderId)).join();
             if (reservation == null || reservation.getReservationId() == null) {
                 releaseAll(reservations);
                 throw new InsufficientInventoryException(item.getSku());
@@ -161,7 +299,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
     private void releaseAll(List<InventoryReservation> reservations) {
         for (InventoryReservation r : reservations) {
             try {
-                inventoryPort.release(r.getReservationId());
+                inventoryPort.release(r.getReservationId()).join();
             } catch (Exception e) {
                 sagaLogPort.recordCompensation(r.getOrderId(), r.getReservationId(),
                         "Release failed during compensation: " + e.getMessage());
@@ -169,44 +307,16 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
         }
     }
 
-    /**
-     * Handles the WMS instruction asynchronously after the order transaction
-     * has committed. Uses {@link TransactionTemplate} to execute database
-     * operations because the callback runs on a Reactor thread outside any
-     * Spring transaction context.
-     *
-     * <p>If WMS accepts the instruction, the inventory is confirmed and the
-     * order status is updated to {@code WMS_ACKED}. If WMS rejects or the
-     * call fails, all reservations are released and the order status is set
-     * to {@code REJECTED}.
-     *
-     * @param event the event containing order and reservation information
-     */
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onWmsRequired(WmsInstructionRequiredEvent event) {
-        InventoryReservation primaryReservation = event.getReservation();
-        List<InventoryReservation> allReservations = event.getReservations();
-        confirmationScheduler.scheduleConfirmation(primaryReservation);
-
-        wmsPort.sendInstruction(event.getInstruction())
-                .thenAccept(ack -> transactionTemplate.executeWithoutResult(status -> {
-                    if (ack.isAccepted()) {
-                        inventoryPort.confirm(new ConfirmReservationCommand(primaryReservation.getReservationId()));
-                        orderRepository.updateStatus(event.getOrderId(), OrderStatus.WMS_ACKED);
-                        sagaLogPort.recordStep(event.getOrderId(), SAGA_STEP_WMS_ACKED, String.format("WMS accepted instruction %s", ack.getMessageId()));
-                    } else {
-                        releaseAll(allReservations);
-                        orderRepository.updateStatus(event.getOrderId(), OrderStatus.REJECTED);
-                        sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(), String.format("WMS rejected: %s", ack.getMessageId()));
-                    }
-                }))
-                .exceptionally(ex -> {
-                    transactionTemplate.executeWithoutResult(status -> {
-                        releaseAll(allReservations);
-                        orderRepository.updateStatus(event.getOrderId(), OrderStatus.REJECTED);
-                        sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(), String.format("WMS transport failed: %s", ex.getMessage()));
-                    });
-                    return null;
-                });
+    private CompletableFuture<Void> releaseAllAsync(List<InventoryReservation> reservations) {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (InventoryReservation r : reservations) {
+            futures.add(inventoryPort.release(r.getReservationId())
+                    .exceptionally(ex -> {
+                        sagaLogPort.recordCompensation(r.getOrderId(), r.getReservationId(),
+                                "Release failed during compensation: " + ex.getMessage());
+                        return null;
+                    }));
+        }
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 }

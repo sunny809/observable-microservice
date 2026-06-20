@@ -29,12 +29,12 @@ public class HttpHelper {
         String body = String.format("{\"customerId\":\"%s\",\"idempotencyKey\":\"%s\",\"items\":%s}",
                 customerId, idempotencyKey, itemsJson);
         HttpEntity<String> request = new HttpEntity<>(body, headers);
-        return restTemplate.postForEntity("/api/orders", request, Map.class);
+        return restTemplate.postForEntity("/api/v1/orders", request, Map.class);
     }
 
     public ResponseEntity<Map> postOrderRaw(String rawBody, HttpHeaders headers) {
         HttpEntity<String> request = new HttpEntity<>(rawBody, headers);
-        return restTemplate.postForEntity("/api/orders", request, Map.class);
+        return restTemplate.postForEntity("/api/v1/orders", request, Map.class);
     }
 
     public HttpHeaders defaultHeaders() {

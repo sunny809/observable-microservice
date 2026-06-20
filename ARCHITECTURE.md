@@ -1,6 +1,6 @@
-# CLAUDE.md
+# Architecture Decision Records
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This document records key architectural decisions made during the development of the order service.
 
 ## Build and Test Commands
 

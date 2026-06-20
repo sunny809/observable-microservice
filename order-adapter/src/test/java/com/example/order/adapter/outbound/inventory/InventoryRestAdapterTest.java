@@ -13,7 +13,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -32,7 +33,7 @@ class InventoryRestAdapterTest extends AbstractHttpAdapterTest {
 
     @Test
     @DisplayName("occupy should return reservation on 200 success response")
-    void testOccupyReturnsReservationOnSuccess() {
+    void testOccupyReturnsReservationOnSuccess() throws Exception {
         String responseBody = "{\"success\":true,\"reservationId\":\"res-123\"}";
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
@@ -40,7 +41,8 @@ class InventoryRestAdapterTest extends AbstractHttpAdapterTest {
                 .addHeader("Content-Type: application/json"));
 
         ReservationRequest request = new ReservationRequest("SKU-1", 5, "ORD-1");
-        InventoryReservation result = adapter.occupy(request);
+        CompletableFuture<InventoryReservation> future = adapter.occupy(request);
+        InventoryReservation result = future.get();
 
         assertNotNull(result);
         assertEquals("res-123", result.getReservationId());
@@ -51,14 +53,17 @@ class InventoryRestAdapterTest extends AbstractHttpAdapterTest {
 
     @Test
     @DisplayName("occupy should return null when response indicates failure")
-    void testOccupyReturnsNullOnFailedResponse() {
+    void testOccupyReturnsNullOnFailedResponse() throws Exception {
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setBody("{\"success\":false,\"reservationId\":null}")
                 .addHeader("Content-Type: application/json"));
 
         ReservationRequest request = new ReservationRequest("SKU-1", 5, "ORD-1");
-        assertNull(adapter.occupy(request));
+        CompletableFuture<InventoryReservation> future = adapter.occupy(request);
+        InventoryReservation result = future.get();
+
+        assertNull(result);
     }
 
     @Test
@@ -69,7 +74,8 @@ class InventoryRestAdapterTest extends AbstractHttpAdapterTest {
                 .setBody("Internal Server Error"));
 
         ReservationRequest request = new ReservationRequest("SKU-1", 5, "ORD-1");
-        assertThrows(RuntimeException.class, () -> adapter.occupy(request));
+        CompletableFuture<InventoryReservation> future = adapter.occupy(request);
+        assertThrows(ExecutionException.class, future::get);
     }
 
     @Test
@@ -80,7 +86,8 @@ class InventoryRestAdapterTest extends AbstractHttpAdapterTest {
                 .setBody("Not Found"));
 
         ReservationRequest request = new ReservationRequest("SKU-1", 5, "ORD-1");
-        assertThrows(RuntimeException.class, () -> adapter.occupy(request));
+        CompletableFuture<InventoryReservation> future = adapter.occupy(request);
+        assertThrows(ExecutionException.class, future::get);
     }
 
     @Test
@@ -91,7 +98,8 @@ class InventoryRestAdapterTest extends AbstractHttpAdapterTest {
                 .setBody("Bad Request"));
 
         ReservationRequest request = new ReservationRequest("SKU-1", 5, "ORD-1");
-        assertThrows(RuntimeException.class, () -> adapter.occupy(request));
+        CompletableFuture<InventoryReservation> future = adapter.occupy(request);
+        assertThrows(ExecutionException.class, future::get);
     }
 
     @Test
@@ -99,7 +107,8 @@ class InventoryRestAdapterTest extends AbstractHttpAdapterTest {
     void testReleaseCallsDeleteEndpoint() throws Exception {
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
 
-        adapter.release("res-123");
+        CompletableFuture<Void> future = adapter.release("res-123");
+        future.get();
 
         var request = mockWebServer.takeRequest();
         assertEquals("/api/inventory/reserve/res-123", request.getPath());
@@ -111,7 +120,8 @@ class InventoryRestAdapterTest extends AbstractHttpAdapterTest {
     void testConfirmCallsPostEndpoint() throws Exception {
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
 
-        adapter.confirm(new ConfirmReservationCommand("res-123"));
+        CompletableFuture<Void> future = adapter.confirm(new ConfirmReservationCommand("res-123"));
+        future.get();
 
         var request = mockWebServer.takeRequest();
         assertEquals("/api/inventory/confirm", request.getPath());
@@ -123,17 +133,17 @@ class InventoryRestAdapterTest extends AbstractHttpAdapterTest {
     void testHandleOccupyFallbackThrows() {
         ReservationRequest request = new ReservationRequest("SKU-1", 5, "ORD-1");
 
-        RuntimeException thrown = assertThrows(RuntimeException.class,
-                () -> adapter.handleOccupyFallback(request, new RuntimeException("timeout")));
-        assertTrue(thrown.getMessage().contains("Inventory service unavailable"));
+        CompletableFuture<InventoryReservation> future = adapter.handleOccupyFallback(request, new RuntimeException("timeout"));
+        ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
+        assertTrue(thrown.getCause().getMessage().contains("Inventory service unavailable"));
     }
 
     @Test
     @DisplayName("handleReleaseFallback should throw with release failed message")
     void testHandleReleaseFallbackThrows() {
-        RuntimeException thrown = assertThrows(RuntimeException.class,
-                () -> adapter.handleReleaseFallback("res-123", new RuntimeException("timeout")));
-        assertTrue(thrown.getMessage().contains("Inventory release failed"));
+        CompletableFuture<Void> future = adapter.handleReleaseFallback("res-123", new RuntimeException("timeout"));
+        ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
+        assertTrue(thrown.getCause().getMessage().contains("Inventory release failed"));
     }
 
     @Test
@@ -141,9 +151,9 @@ class InventoryRestAdapterTest extends AbstractHttpAdapterTest {
     void testHandleConfirmFallbackThrows() {
         ConfirmReservationCommand cmd = new ConfirmReservationCommand("res-123");
 
-        RuntimeException thrown = assertThrows(RuntimeException.class,
-                () -> adapter.handleConfirmFallback(cmd, new RuntimeException("timeout")));
-        assertTrue(thrown.getMessage().contains("Inventory confirmation failed"));
+        CompletableFuture<Void> future = adapter.handleConfirmFallback(cmd, new RuntimeException("timeout"));
+        ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
+        assertTrue(thrown.getCause().getMessage().contains("Inventory confirmation failed"));
     }
 
     @Test
@@ -153,7 +163,8 @@ class InventoryRestAdapterTest extends AbstractHttpAdapterTest {
                 .setResponseCode(500)
                 .setBody("Internal Server Error"));
 
-        assertThrows(RuntimeException.class, () -> adapter.release("res-123"));
+        CompletableFuture<Void> future = adapter.release("res-123");
+        assertThrows(ExecutionException.class, future::get);
     }
 
     @Test
@@ -163,6 +174,7 @@ class InventoryRestAdapterTest extends AbstractHttpAdapterTest {
                 .setResponseCode(404)
                 .setBody("Not Found"));
 
-        assertThrows(RuntimeException.class, () -> adapter.release("res-123"));
+        CompletableFuture<Void> future = adapter.release("res-123");
+        assertThrows(ExecutionException.class, future::get);
     }
 }

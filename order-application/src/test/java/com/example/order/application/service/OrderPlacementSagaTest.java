@@ -41,6 +41,8 @@ class OrderPlacementSagaTest {
     private IdempotencyCachePort idempotencyCache;
     private OrderPlacementSaga saga;
 
+    private TmsPort tmsPort;
+
     @BeforeEach
     void setUp() {
         orderRepository = mock(OrderRepositoryPort.class);
@@ -48,6 +50,7 @@ class OrderPlacementSagaTest {
         sagaLogPort = mock(SagaLogPort.class);
         eventPublisher = mock(DomainEventPublisher.class);
         wmsPort = mock(WmsPort.class);
+        tmsPort = mock(TmsPort.class);
         confirmationScheduler = mock(InventoryConfirmationScheduler.class);
         transactionTemplate = mock(TransactionTemplate.class);
         idempotencyCache = mock(IdempotencyCachePort.class);
@@ -57,7 +60,7 @@ class OrderPlacementSagaTest {
             return null;
         }).when(transactionTemplate).executeWithoutResult(any());
         saga = new OrderPlacementSaga(orderRepository, inventoryPort, sagaLogPort,
-                eventPublisher, wmsPort, confirmationScheduler, transactionTemplate, idempotencyCache);
+                eventPublisher, wmsPort, tmsPort, confirmationScheduler, transactionTemplate, idempotencyCache);
     }
 
     private PlaceOrderCommand createCommand() {
@@ -76,7 +79,7 @@ class OrderPlacementSagaTest {
         InventoryReservation reservation = createReservation();
 
         when(orderRepository.findByIdempotencyKey("idem-key-1")).thenReturn(Optional.empty());
-        when(inventoryPort.occupy(any(ReservationRequest.class))).thenReturn(reservation);
+        when(inventoryPort.occupy(any(ReservationRequest.class))).thenReturn(CompletableFuture.completedFuture(reservation));
         when(wmsPort.sendInstruction(any(WmsShipmentInstruction.class)))
                 .thenReturn(CompletableFuture.completedFuture(new WmsAck(true, "ack-1")));
 
@@ -110,7 +113,7 @@ class OrderPlacementSagaTest {
         PlaceOrderCommand command = createCommand();
 
         when(orderRepository.findByIdempotencyKey("idem-key-1")).thenReturn(Optional.empty());
-        when(inventoryPort.occupy(any(ReservationRequest.class))).thenReturn(null);
+        when(inventoryPort.occupy(any(ReservationRequest.class))).thenReturn(CompletableFuture.completedFuture(null));
 
         InsufficientInventoryException ex = assertThrows(InsufficientInventoryException.class,
                 () -> saga.placeOrder(command));
@@ -124,8 +127,10 @@ class OrderPlacementSagaTest {
     void testOnWmsAcceptedConfirmsInventory() throws Exception {
         InventoryReservation reservation = createReservation();
         CountDownLatch latch = new CountDownLatch(1);
-        doAnswer(invocation -> { latch.countDown(); return null; })
-                .when(inventoryPort).confirm(any(ConfirmReservationCommand.class));
+        doAnswer(invocation -> {
+            latch.countDown();
+            return CompletableFuture.completedFuture(null);
+        }).when(inventoryPort).confirm(any(ConfirmReservationCommand.class));
 
         WmsInstructionRequiredEvent event = new WmsInstructionRequiredEvent(
                 "ord-1", new WmsShipmentInstruction("ord-1", "resv-123"), reservation);
@@ -147,8 +152,10 @@ class OrderPlacementSagaTest {
     void testOnWmsRejectedReleasesInventory() throws Exception {
         InventoryReservation reservation = createReservation();
         CountDownLatch latch = new CountDownLatch(1);
-        doAnswer(invocation -> { latch.countDown(); return null; })
-                .when(inventoryPort).release(anyString());
+        doAnswer(invocation -> {
+            latch.countDown();
+            return CompletableFuture.completedFuture(null);
+        }).when(inventoryPort).release(anyString());
 
         WmsInstructionRequiredEvent event = new WmsInstructionRequiredEvent(
                 "ord-1", new WmsShipmentInstruction("ord-1", "resv-123"), reservation);
@@ -170,8 +177,10 @@ class OrderPlacementSagaTest {
     void testOnWmsTransportFailureReleasesInventory() throws Exception {
         InventoryReservation reservation = createReservation();
         CountDownLatch latch = new CountDownLatch(1);
-        doAnswer(invocation -> { latch.countDown(); return null; })
-                .when(inventoryPort).release(anyString());
+        doAnswer(invocation -> {
+            latch.countDown();
+            return CompletableFuture.completedFuture(null);
+        }).when(inventoryPort).release(anyString());
 
         WmsInstructionRequiredEvent event = new WmsInstructionRequiredEvent(
                 "ord-1", new WmsShipmentInstruction("ord-1", "resv-123"), reservation);
@@ -222,9 +231,9 @@ class OrderPlacementSagaTest {
         when(orderRepository.findByIdempotencyKey("idem-key-partial")).thenReturn(Optional.empty());
         when(inventoryPort.occupy(any(ReservationRequest.class))).thenAnswer(invocation -> {
             if (callCount.getAndIncrement() == 0) {
-                return firstReservation;
+                return CompletableFuture.completedFuture(firstReservation);
             }
-            return null;
+            return CompletableFuture.completedFuture(null);
         });
 
         InsufficientInventoryException ex = assertThrows(InsufficientInventoryException.class,

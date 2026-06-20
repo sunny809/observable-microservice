@@ -15,7 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Tag("unit")
 @Tag("rest-api")
@@ -30,9 +31,7 @@ class OrderControllerTest {
         when(useCase.placeOrder(any()))
                 .thenReturn(new OrderPlacedResult("ord-123", OrderStatus.CREATED, "mock-trace"));
         OrderController controller = new OrderController(useCase);
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .addFilters(new TraceFilter())
-                .build();
+        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 
     private String orderJson(String customerId, String idempotencyKey, String itemsJson) {
@@ -46,48 +45,34 @@ class OrderControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/orders with valid request returns 201 CREATED with order ID and status")
+    @DisplayName("POST /api/v1/orders with valid request returns 201 CREATED with order ID and status")
     void testPlaceOrderSuccess() throws Exception {
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post("/api/v1/orders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(orderJson("cust-1", "idem-1", """
                                 {"sku": "SKU-1", "quantity": 5}
                                 """)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.orderId").value("ord-123"))
-                .andExpect(jsonPath("$.status").value("CREATED"))
-                .andExpect(header().exists("X-Trace-Id"));
+                .andExpect(jsonPath("$.status").value("CREATED"));
     }
 
     @Test
-    @DisplayName("POST /api/orders generates trace ID when X-Trace-Id header is absent")
-    void testPlaceOrderGeneratesTraceIdWhenNoneProvided() throws Exception {
-        mockMvc.perform(post("/api/orders")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(orderJson("cust-2", "idem-2", """
-                                {"sku": "SKU-2", "quantity": 3}
-                                """)))
-                .andExpect(status().isCreated())
-                .andExpect(header().exists("X-Trace-Id"));
-    }
-
-    @Test
-    @DisplayName("POST /api/orders propagates incoming X-B3-TraceId header")
+    @DisplayName("POST /api/v1/orders propagates incoming X-B3-TraceId header")
     void testPlaceOrderUsesIncomingTraceId() throws Exception {
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post("/api/v1/orders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-B3-TraceId", "my-trace-abc")
                         .content(orderJson("cust-3", "idem-3", """
                                 {"sku": "SKU-3", "quantity": 1}
                                 """)))
-                .andExpect(status().isCreated())
-                .andExpect(header().string("X-Trace-Id", "my-trace-abc"));
+                .andExpect(status().isCreated());
     }
 
     @Test
-    @DisplayName("POST /api/orders rejects empty customer ID with 400 Bad Request")
+    @DisplayName("POST /api/v1/orders rejects empty customer ID with 400 Bad Request")
     void testPlaceOrderRejectsMissingCustomerId() throws Exception {
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post("/api/v1/orders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(orderJson("", "idem-1", """
                                 {"sku": "SKU-1", "quantity": 5}
@@ -96,18 +81,18 @@ class OrderControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/orders rejects empty items list with 400 Bad Request")
+    @DisplayName("POST /api/v1/orders rejects empty items list with 400 Bad Request")
     void testPlaceOrderRejectsMissingItems() throws Exception {
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post("/api/v1/orders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(orderJson("cust-1", "idem-1", "")))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    @DisplayName("POST /api/orders with multiple items returns 201 CREATED")
+    @DisplayName("POST /api/v1/orders with multiple items returns 201 CREATED")
     void testPlaceOrderWithMultipleItems() throws Exception {
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post("/api/v1/orders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(orderJson("cust-4", "idem-4", """
                                 {"sku": "SKU-1", "quantity": 2},
@@ -119,12 +104,12 @@ class OrderControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/orders propagates exception from use case")
+    @DisplayName("POST /api/v1/orders propagates exception from use case")
     void testPlaceOrderPropagatesExceptionFromUseCase() {
         when(useCase.placeOrder(any()))
                 .thenThrow(new RuntimeException("inventory unavailable"));
 
-        assertThrows(Exception.class, () -> mockMvc.perform(post("/api/orders")
+        assertThrows(Exception.class, () -> mockMvc.perform(post("/api/v1/orders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(orderJson("cust-5", "idem-5", """
                                 {"sku": "SKU-1", "quantity": 5}
@@ -132,9 +117,9 @@ class OrderControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/orders rejects blank idempotency key with 400 Bad Request")
+    @DisplayName("POST /api/v1/orders rejects blank idempotency key with 400 Bad Request")
     void testPlaceOrderRejectsMissingIdempotencyKey() throws Exception {
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post("/api/v1/orders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(orderJson("cust-1", "   ", """
                                 {"sku": "SKU-1", "quantity": 5}

@@ -17,6 +17,9 @@ inventory:
 wms:
   base-url: http://localhost:8082
 
+tms:
+  base-url: http://localhost:8083
+
 otel:
   exporter:
     endpoint: http://localhost:4317
@@ -40,3 +43,28 @@ resilience4j:
         minimumNumberOfCalls: 3
         waitDurationInOpenState: 1s
         permittedNumberOfCallsInHalfOpenState: 2
+      tmsService:
+        failureRateThreshold: 50
+        slowCallRateThreshold: 100
+        slidingWindowSize: 3
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 3
+        waitDurationInOpenState: 1s
+        permittedNumberOfCallsInHalfOpenState: 2
+  retry:
+    instances:
+      inventoryService:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+      wmsService:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+      tmsService:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2

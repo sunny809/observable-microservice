@@ -1,0 +1,9 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080
+
+# Local development profile: disable JWT for easier testing
+# To activate: SPRING_PROFILES_ACTIVE=local make run

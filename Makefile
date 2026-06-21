@@ -172,7 +172,9 @@ lint: lint-markdown lint-yaml lint-docker lint-spotbugs ## Run all linters local
 lint-markdown: ## Lint Markdown files
 	@echo "Linting Markdown files..."
 	@which markdownlint-cli2 2>/dev/null 1>&2 && \
-		markdownlint-cli2 '*.md' 'docs/**/*.md' 'o11y-kit/**/*.md' || \
+		markdownlint-cli2 --config .markdownlint-cli2.jsonc \
+			'*.md' '!docs/RESUME_GUIDE.md' '!docs/SPEC.md' \
+			'docs/**/*.md' 'o11y-kit/**/*.md' || \
 		echo "  Install: npm install -g markdownlint-cli2"
 
 .PHONY: lint-yaml

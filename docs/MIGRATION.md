@@ -1,6 +1,6 @@
 # Migration Guide
 
-## Upgrading from v0.1.0-alpha to v0.1.1-alpha (Sprint 1.5)
+## Upgrading from v0.1.0-alpha to v0.1.1-alpha
 
 ### TraceFilter removal
 
@@ -46,7 +46,7 @@ public WebMvcConfigurer actuatorObservationConfigurer(ServerObservationHandler h
 
 ---
 
-## Upgrading from v0.1.1-alpha to v0.2.0-alpha (Sprint 2)
+## Upgrading from v0.1.1-alpha to v0.2.0-alpha
 
 ### BOM version bump
 

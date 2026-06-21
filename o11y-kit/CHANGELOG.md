@@ -82,7 +82,7 @@ Hotfix release addressing 13 issues found in post-Sprint-1 max-effort code revie
 
 ### Verified
 
-```
+```text
 o11y-kit:   24 tests, 0 failures  ✅  (+6 vs v0.1.0)
 order-demo: 96 tests, 0 failures  ✅  (TraceFilter tests removed)
 ```

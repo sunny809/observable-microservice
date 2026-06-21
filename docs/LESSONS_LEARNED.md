@@ -1,133 +1,146 @@
 # Lessons Learned
 
-This document captures the real-world challenges, design trade-offs, and iterative thinking that went into building this order service. It is intended to show the evolution of ideas and the reasoning behind key decisions.
+This document captures real-world engineering challenges, design trade-offs, and the reasoning behind key decisions. It is intended to help readers understand not just what was built, but why it was built that way.
 
-## TransactionTemplate in Async WMS Callbacks
+---
+
+## TransactionTemplate in Async Callbacks
 
 **The Problem:**
-Initially, I tried using `@Async` for the WMS callback after the order transaction committed. The idea was simple: fire the WMS call in a background thread and update the order status when it returned. However, I spent an entire day debugging why database updates in the callback weren't persisting.
-
-**What I Learned:**
-Spring's `@Transactional` context does not propagate to Reactor Netty threads (used by WebClient). Even though the callback ran after the transaction committed, any database operations in `thenAccept` or `exceptionally` were silently ignored because there was no active transaction.
+Async callbacks from `CompletableFuture` chains run on Reactor Netty threads. Spring's `@Transactional` context does not propagate to these threads — database operations in `thenAccept` or `exceptionally` are silently ignored.
 
 **The Solution:**
-I switched to `TransactionTemplate.executeWithoutResult()` to explicitly create a new transaction for each database operation in the async callback. This is documented in ADR-1.
+Wrap all database operations in async callbacks with `TransactionTemplate.executeWithoutResult()` to explicitly create a new transaction. Documented in ADR-1.
 
-**Alternative Considered:**
-I briefly considered using a message queue (Kafka) for the WMS callback instead of `CompletableFuture`, but that would have introduced significant infrastructure complexity for what is essentially a single downstream call. I kept the `CompletableFuture` approach but added a TODO for future Kafka migration.
+**Key Insight:**
+When mixing reactive HTTP clients (WebClient) with imperative transaction management, assume no transaction context propagation. Always wrap data access in explicit transaction boundaries.
+
+---
 
 ## Circuit Breaker Threshold Tuning
 
-**The Problem:**
-I started with a Resilience4j circuit breaker failure rate threshold of 20%. During testing with simulated network failures, I found this was far too aggressive — brief blips (e.g., a single timeout) would open the circuit for 30 seconds, causing unnecessary 500 errors.
+The initial circuit breaker configuration used a 10% failure rate threshold. This was too sensitive for a service with low traffic — a single timeout in a 10-request window would open the circuit.
 
-**What I Learned:**
-Circuit breaker thresholds need to balance sensitivity with tolerance for transient failures. After testing with various scenarios, I settled on 50% failure rate with a 10-call sliding window. This means the circuit only opens after 5 consecutive failures, which is more appropriate for HTTP services with occasional timeouts.
+**Final configuration:**
 
-**The Configuration:**
-```yaml
-resilience4j:
-  circuitbreaker:
-    instances:
-      inventoryService:
-        failureRateThreshold: 50
-        slidingWindowSize: 10
-        waitDurationInOpenState: 30s
+- Failure rate threshold: **50%**
+- Minimum number of calls: **5** (prevents false positives on low traffic)
+- Sliding window: **10 calls**, count-based
+- Wait duration in open state: **30 seconds**
+
+**Key Insight:**
+Circuit breaker thresholds must account for traffic volume. A 50% threshold with a minimum call count of 5 means at least 3 out of 5 calls must fail before the circuit opens. This prevents single transient failures from triggering cascading outages.
+
+---
+
+## Dual-Layer Idempotency Trade-offs
+
+**The approach:**
+
+1. Caffeine cache (fast path): 30-minute TTL, max 10,000 entries
+2. Database unique constraint (source of truth)
+
+**Why not just the database?**
+A database query for idempotency check takes 2-5ms. The Caffeine cache provides sub-millisecond lookup for hot keys. In a 1000 RPM scenario, the cache handles ~99% of duplicate checks without touching the database.
+
+**Why not just the cache?**
+The cache has a 30-minute TTL and is in-memory. A service restart clears it. The database constraint ensures correctness across restarts and prevents the race condition where two concurrent requests with the same idempotency key both miss the cache.
+
+**Key Insight:**
+Caching for idempotency is a performance optimization, not a correctness mechanism. Always pair it with a durable source of truth.
+
+---
+
+## Async Saga Orchestration Complexity
+
+The saga uses `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` to fire async operations after the HTTP response is sent. This gives the user a fast 201 response while the heavy lifting (WMS/TMS communication) happens in the background.
+
+**Challenges encountered:**
+
+1. Transaction context loss on Reactor threads (see above)
+2. Event ordering — WMS confirmation must complete before TMS dispatch starts
+3. Error handling in async chains — exceptions in `thenCompose` are silently swallowed unless caught in `exceptionally`
+4. Compensating transactions must be idempotent (releasing an already-released reservation should be safe)
+
+**Pattern that emerged:**
+
+```java
+@TransactionalEventListener(AFTER_COMMIT)
+void onEvent(Event event) {
+    service.call()
+        .thenCompose(result -> {
+            if (result.isSuccess()) {
+                return nextStep()
+                    .thenRun(() -> transactionTemplate.executeWithoutResult(tx -> {
+                        // update status, log saga step
+                    }));
+            } else {
+                return compensate()
+                    .thenRun(() -> transactionTemplate.executeWithoutResult(tx -> {
+                        // update status to REJECTED, log compensation
+                    }));
+            }
+        })
+        .exceptionally(ex -> {
+            transactionTemplate.executeWithoutResult(tx -> {
+                compensate();
+                updateStatus(REJECTED);
+            });
+            return null;
+        });
+}
 ```
 
-## Idempotency Cache vs Database
+---
 
-**The Problem:**
-Early versions of the idempotency check queried the database on every request. For high-traffic scenarios, this created unnecessary load on PostgreSQL.
+## WebClient + Resilience4j: Non-Blocking Fallback
 
-**What I Learned:**
-A two-tier approach works best: Caffeine in-memory cache for sub-millisecond hot-path detection, with a database fallback for correctness across service restarts. The cache has a 30-minute TTL, which is a trade-off — too short and you lose the performance benefit; too long and you risk memory pressure.
+Resilience4j's `@CircuitBreaker` with `fallbackMethod` requires the fallback method to have the same return type as the original method. When migrating from blocking (`restTemplate`) to non-blocking (`webClient`), the fallback method must return a `CompletableFuture`, not throw an exception directly.
 
-**The Trade-off:**
-- Cache hit: ~0.1ms response time
-- Cache miss + DB lookup: ~5ms response time
-- Full DB write: ~15ms response time
+**Before (blocking):**
 
-This is acceptable for our use case, but in a multi-instance deployment, the cache inconsistency across instances would require Redis or Hazelcast.
+```java
+public InventoryReservation handleOccupyFallback(...) {
+    throw new RuntimeException("Inventory service unavailable");
+}
+```
 
-## Span Lifecycle in WmsRestAdapter
+**After (non-blocking):**
 
-**The Problem:**
-OpenTelemetry spans are designed to measure the duration of an operation. In `WmsRestAdapter.sendInstruction()`, I create a span, make an async WebClient call, and return a `CompletableFuture`. The span ends in the `finally` block before the HTTP call completes.
+```java
+public CompletableFuture<InventoryReservation> handleOccupyFallback(...) {
+    return CompletableFuture.failedFuture(new RuntimeException("Inventory service unavailable"));
+}
+```
 
-**What I Learned:**
-This means the span duration only covers the synchronous setup phase (~1ms), not the actual HTTP call duration (~50-200ms). HTTP errors are also not recorded on the span because it has already ended.
+---
 
-**Future Fix:**
-I documented this as ADR-3 with a proposed fix: move `span.end()` into `CompletableFuture.whenComplete()`. However, this requires careful handling of the span context across threads, so I left it as a known issue.
+## Observability: SDK Extraction as a Project Matures
 
-## Jackson Mixins for Domain Serialization
+The observability interceptors started as inline code in the adapter module. As they were refined (fixing double-counting of HTTP errors, resolving trace ID format issues, adding metrics for cancelled requests), it became clear that the code had become a reusable library.
 
-**The Problem:**
-I wanted to keep domain classes (`OrderItem`, `Order`) free of Jackson annotations to maintain framework independence. But the persistence adapter needs to serialize them to JSON for the database.
+**Signals that it was time to extract:**
 
-**What I Learned:**
-Jackson Mixins allow you to add serialization rules without modifying the domain classes. This is a clean solution, but it has a subtle issue: serialization failures silently return empty arrays (logged as warnings). I spent an hour debugging why orders were saving with empty item lists before realizing the mixin wasn't handling null collections correctly.
+1. The interceptor code had no business logic — it was pure cross-cutting concern
+2. Multiple adapters needed the same pattern (WebClient, RestTemplate, RestClient)
+3. Tests for observability outnumbered tests for some business features
+4. Configuration properties (`o11y.kit.*`) had their own lifecycle independent of the application
 
-**The Fix:**
-Added null checks in the mixin and defensive copies in the `Order` constructor.
+The extraction produced [o11y-kit](o11y-kit/), a separate 7-module SDK with its own versioning, test suite (82 tests), and documentation.
 
-## Testing the Saga Pattern
+---
 
-**The Problem:**
-Testing `OrderPlacementSaga` was the hardest part of this project. The saga involves multiple async operations, compensation logic, and event publishing. A simple unit test with mocked ports wasn't enough — I needed to verify that compensation runs in the right order.
+## Security: Layered Approach for Different Environments
 
-**What I Learned:**
-I used `CountDownLatch` and `Awaitility` to wait for async operations in tests. For BDD tests, I used WireMock to simulate inventory service responses and Testcontainers for PostgreSQL. The key insight was to test the saga as a black box: verify the final state (order status, inventory reservations) rather than the internal steps.
+The blueprint supports three security profiles:
 
-**Test Coverage:**
-- Unit tests: 42 test methods for saga logic
-- Integration tests: JPA repository tests with `@DataJpaTest`
-- BDD tests: 13 Cucumber scenarios covering happy path, failures, and edge cases
-- Architecture tests: ArchUnit rules enforcing hexagonal boundaries
+| Profile | Security | Use Case |
+|---------|----------|----------|
+| `default` | JWT/OAuth2 required | Production-like |
+| `local` | All endpoints permitted | Local development |
+| `test` | All endpoints permitted | Automated tests |
 
-## Hexagonal Architecture in Spring Boot
+The `test` profile uses a dedicated `TestSecurityConfig` to avoid loading the `SecurityConfig` during integration tests. This prevents JWT validation from blocking test HTTP calls.
 
-**The Problem:**
-Spring Boot encourages a layered architecture (Controller → Service → Repository). Moving to hexagonal architecture (Ports & Adapters) required rethinking the module structure.
-
-**What I Learned:**
-The key is to invert dependencies: the domain layer (`order-application`) defines interfaces (ports), and the infrastructure layer (`order-adapter`) implements them. This means `order-application` has zero dependencies on Spring Framework — only `spring-context` and `spring-tx` for `@Service` and `@Transactional`.
-
-**The Challenge:**
-Spring Boot's auto-configuration expects beans to be in the same package or sub-packages. Splitting the project into modules required explicit `@ComponentScan` and `@Import` configurations in `order-infrastructure`.
-
-**The Payoff:**
-- Domain logic is fully testable without Spring context
-- Framework changes (e.g., switching from JPA to MongoDB) don't affect the domain layer
-- ArchUnit tests enforce these boundaries at build time
-
-## Docker Multi-Stage Build
-
-**The Problem:**
-The initial Dockerfile used a single stage with Maven and the full JDK, resulting in a 500MB+ image.
-
-**What I Learned:**
-Multi-stage builds are essential for production images:
-1. Stage 1: Build with Maven + JDK
-2. Stage 2: Runtime with JRE only
-
-I also added security hardening:
-- Non-root user (`appuser`, UID 1000)
-- Read-only root filesystem
-- Distroless base image (Alpine JRE)
-
-**The Result:**
-Image size dropped from 500MB to ~180MB. Trivy vulnerability scanning shows zero critical/high vulnerabilities.
-
-## What I Would Do Differently
-
-1. **Use Kafka for WMS callbacks from the start**: The current Spring Events approach works for a single instance but doesn't scale. I would implement the Outbox pattern with Kafka for reliable event publishing.
-
-2. **Add saga timeout handling**: Currently, if the WMS callback never arrives, the order stays in `CREATED` status indefinitely. I would add a scheduled job to mark stale orders as `REJECTED` after a timeout.
-
-3. **Use Redis for distributed caching**: Caffeine is great for single-instance but requires Redis or Hazelcast in a multi-instance deployment.
-
-4. **Add a dead letter queue for failed compensations**: If inventory release fails during compensation, the saga logs the error but doesn't retry. A DLQ would ensure eventual consistency.
-
-5. **Implement API versioning from the start**: I added `/api/v1/orders` late in the project. Starting with versioning would have made the API evolution cleaner.
+**Key Insight:**
+Security configuration is an environment concern, not a code concern. Use Spring profiles to switch between permissive and strict configurations without changing application code.

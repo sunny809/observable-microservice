@@ -9,7 +9,7 @@
 
 A **drop-in HTTP observability toolkit** for Spring Boot 3.x. Add one dependency, restart your app, and every HTTP request — inbound (Controller) and outbound (WebClient / RestTemplate / RestClient) — automatically produces Micrometer metrics and optional OpenTelemetry spans. **Zero code changes.**
 
-```
+```text
 Add dependency → restart → /actuator/prometheus shows o11y_server_requests + o11y_client_requests
 ```
 
@@ -59,7 +59,7 @@ curl http://localhost:8080/actuator/prometheus | grep o11y
 
 You should see:
 
-```
+```prometheus
 # HELP o11y_server_requests_seconds Server HTTP request duration
 o11y_server_requests_seconds_count{method="POST",uri="/api/orders",status="201"} 1.0
 
@@ -121,7 +121,7 @@ RestClient inventoryRestClient(RestClient.Builder builder) {
 
 ### Module dependency graph
 
-```
+```text
                        +-------------------+
                        |  o11y-kit-api     |  (zero-framework)
                        +---------+---------+
@@ -205,7 +205,7 @@ Yes since v0.2.0-alpha. Declare a `RestTemplate` bean via `RestTemplateBuilder` 
 
 ### What about Feign?
 
-Planned for Sprint 3 (v0.3.0-beta). The module will be `o11y-kit-spring-cloud` with a `FeignObservationInterceptor`.
+Spring Cloud OpenFeign entered maintenance mode in 2022. This project focuses on Spring's native HTTP clients (WebClient, RestTemplate, RestClient) and the upcoming declarative HTTP interfaces (`HttpServiceProxyFactory`). Feign support may be considered in a future major release based on community demand.
 
 ### How do I exclude endpoints from metrics?
 

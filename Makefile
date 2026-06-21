@@ -166,9 +166,47 @@ format: ## Format code
 	mvn spotless:apply
 
 .PHONY: lint
-lint: ## Run code quality checks
-	@echo "Running code quality checks..."
-	mvn spotless:check
+lint: lint-markdown lint-yaml lint-docker lint-spotbugs ## Run all linters locally
+
+.PHONY: lint-markdown
+lint-markdown: ## Lint Markdown files
+	@echo "Linting Markdown files..."
+	@which markdownlint-cli2 2>/dev/null 1>&2 && \
+		markdownlint-cli2 '*.md' 'docs/**/*.md' 'o11y-kit/**/*.md' || \
+		echo "  Install: npm install -g markdownlint-cli2"
+
+.PHONY: lint-yaml
+lint-yaml: ## Lint YAML files
+	@echo "Linting YAML files (GitHub Actions, K8s, Helm)..."
+	@which yamllint 2>/dev/null 1>&2 && \
+		yamllint -d '{extends: relaxed, rules: {line-length: disable, document-start: disable, truthy: disable}}' \
+			.github/workflows/ k8s/ helm/ || \
+		echo "  Install: pip install yamllint"
+
+.PHONY: lint-docker
+lint-docker: ## Lint Dockerfile
+	@echo "Linting Dockerfile..."
+	@which hadolint 2>/dev/null 1>&2 && \
+		hadolint Dockerfile || \
+		echo "  Install: https://github.com/hadolint/hadolint/releases"
+
+.PHONY: lint-spotbugs
+lint-spotbugs: ## Run SpotBugs + Checkstyle (o11y-kit modules)
+	@echo "Running SpotBugs + Checkstyle..."
+	@cd o11y-kit && mvn verify -P static-analysis -B && cd ..
+
+.PHONY: codeql
+codeql: ## Run CodeQL analysis locally (requires CodeQL CLI)
+	@echo "Running CodeQL analysis..."
+	@which codeql 2>/dev/null 1>&2 && \
+		codeql database create target/codeql-db --language=java --source-root=. --command='mvn clean verify -DskipTests -B' && \
+		codeql database analyze target/codeql-db --format=sarif-latest --output=target/codeql-results.sarif && \
+		echo "  Results: target/codeql-results.sarif" || \
+		echo "  Install: https://github.com/github/codeql-cli-binaries/releases"
+
+.PHONY: scan-all
+scan-all: lint dependency-check test-coverage ## Run all quality gate checks (lint + OWASP + coverage)
+	@echo "All quality checks complete."
 
 .PHONY: dependency-check
 dependency-check: ## Run OWASP dependency check

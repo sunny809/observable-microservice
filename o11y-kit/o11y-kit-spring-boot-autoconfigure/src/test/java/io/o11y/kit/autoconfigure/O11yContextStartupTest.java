@@ -124,6 +124,30 @@ class O11yContextStartupTest {
     }
 
     @Test
+    void serverEnabledFalseSkipsWebMvcAutoConfiguration() {
+        servletRunner
+                .withBean(MeterRegistry.class, SimpleMeterRegistry::new)
+                .withPropertyValues("o11y.kit.server.enabled=false")
+                .run(ctx -> {
+                    assertThat(ctx).hasNotFailed();
+                    // ObservationWebMvcAutoConfiguration should not load at all
+                    assertThat(ctx).doesNotHaveBean(ServerObservationHandler.class);
+                });
+    }
+
+    @Test
+    void clientEnabledFalseSkipsWebFluxAutoConfiguration() {
+        reactiveRunner
+                .withBean(MeterRegistry.class, SimpleMeterRegistry::new)
+                .withPropertyValues("o11y.kit.client.enabled=false")
+                .run(ctx -> {
+                    assertThat(ctx).hasNotFailed();
+                    // ObservationWebFluxAutoConfiguration should not load at all
+                    assertThat(ctx).doesNotHaveBean(ClientObservationHandler.class);
+                });
+    }
+
+    @Test
     void contextLoadsWithoutWebClientOnClasspath() {
         // ObservationWebFluxAutoConfiguration is gated on WebClient.class — when it's
         // missing, the auto-config silently skips and the rest of the context still loads.

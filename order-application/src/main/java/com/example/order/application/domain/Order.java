@@ -4,8 +4,11 @@ import com.example.order.application.port.in.OrderItem;
 import com.example.order.application.port.in.PlaceOrderCommand;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -30,6 +33,26 @@ public class Order {
     private final String idempotencyKey;
     private String reservationId;
     private final Instant createdAt;
+    private final List<String> allReservationIds;
+
+    public Order(String orderId,
+                 String customerId,
+                 List<OrderItem> items,
+                 OrderStatus status,
+                 String idempotencyKey,
+                 String reservationId,
+                 Instant createdAt,
+                 List<String> allReservationIds) {
+        this.orderId = Objects.requireNonNull(orderId);
+        this.customerId = Objects.requireNonNull(customerId);
+        this.items = Collections.unmodifiableList(Objects.requireNonNull(items));
+        this.status = Objects.requireNonNull(status);
+        this.idempotencyKey = Objects.requireNonNull(idempotencyKey);
+        this.reservationId = reservationId;
+        this.createdAt = Objects.requireNonNull(createdAt);
+        this.allReservationIds = allReservationIds != null
+                ? List.copyOf(allReservationIds) : List.of();
+    }
 
     public Order(String orderId,
                  String customerId,
@@ -38,13 +61,8 @@ public class Order {
                  String idempotencyKey,
                  String reservationId,
                  Instant createdAt) {
-        this.orderId = Objects.requireNonNull(orderId);
-        this.customerId = Objects.requireNonNull(customerId);
-        this.items = Collections.unmodifiableList(Objects.requireNonNull(items));
-        this.status = Objects.requireNonNull(status);
-        this.idempotencyKey = Objects.requireNonNull(idempotencyKey);
-        this.reservationId = reservationId;
-        this.createdAt = Objects.requireNonNull(createdAt);
+        this(orderId, customerId, items, status, idempotencyKey, reservationId,
+             createdAt, List.of());
     }
 
     public static Order create(PlaceOrderCommand command, String reservationId) {
@@ -75,15 +93,72 @@ public class Order {
     }
 
     /**
-     * Updates the order status. This setter is intentionally exposed for
-     * saga state transitions; consider using domain-specific transition
-     * methods (e.g., {@code markAsWmsAcked()}) in future refactors.
+     * Updates the order status. Validates that the transition is legal
+     * according to the saga state machine.
      *
      * @param status the new status
+     * @throws IllegalStateException if the transition is not allowed from the current status
      */
     public void setStatus(OrderStatus status) {
+        Set<OrderStatus> allowed = ALLOWED_TRANSITIONS.get(this.status);
+        if (allowed == null || !allowed.contains(status)) {
+            throw new IllegalStateException(
+                    "Illegal status transition: " + this.status + " → " + status);
+        }
         this.status = status;
     }
+
+    /**
+     * Transitions the order to {@link OrderStatus#WMS_ACKED}.
+     *
+     * @throws IllegalStateException if the current status is not {@code CREATED}
+     */
+    public void markWmsAcked() {
+        setStatus(OrderStatus.WMS_ACKED);
+    }
+
+    /**
+     * Transitions the order to {@link OrderStatus#WMS_PICKED}.
+     *
+     * @throws IllegalStateException if the current status is not {@code WMS_ACKED}
+     */
+    public void markWmsPicked() {
+        setStatus(OrderStatus.WMS_PICKED);
+    }
+
+    /**
+     * Transitions the order to {@link OrderStatus#TMS_DISPATCHED}.
+     *
+     * @throws IllegalStateException if the current status is not {@code WMS_PICKED}
+     */
+    public void markTmsDispatched() {
+        setStatus(OrderStatus.TMS_DISPATCHED);
+    }
+
+    /**
+     * Transitions the order to {@link OrderStatus#REJECTED}.
+     *
+     * @throws IllegalStateException if the current status does not allow rejection
+     */
+    public void markRejected() {
+        setStatus(OrderStatus.REJECTED);
+    }
+
+    /**
+     * Transitions the order to {@link OrderStatus#TMS_REJECTED}.
+     *
+     * @throws IllegalStateException if the current status is not {@code WMS_PICKED}
+     */
+    public void markTmsRejected() {
+        setStatus(OrderStatus.TMS_REJECTED);
+    }
+
+    /** Legal state transitions for the order saga state machine. */
+    private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED_TRANSITIONS = Map.of(
+            OrderStatus.CREATED, EnumSet.of(OrderStatus.WMS_ACKED, OrderStatus.REJECTED),
+            OrderStatus.WMS_ACKED, EnumSet.of(OrderStatus.WMS_PICKED, OrderStatus.REJECTED),
+            OrderStatus.WMS_PICKED, EnumSet.of(OrderStatus.TMS_DISPATCHED, OrderStatus.TMS_REJECTED)
+    );
 
     public String getIdempotencyKey() {
         return idempotencyKey;
@@ -104,5 +179,9 @@ public class Order {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public List<String> getAllReservationIds() {
+        return allReservationIds;
     }
 }

@@ -112,17 +112,14 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
     @Override
     @Transactional
     public OrderPlacedResult placeOrder(PlaceOrderCommand command) {
-        // Fast path: check cache first to avoid DB hit for common duplicate case
+        // Fast path: cache hit means we already processed this key — throw immediately
         if (idempotencyCache.exists(command.getIdempotencyKey())) {
-            orderRepository.findByIdempotencyKey(command.getIdempotencyKey()).ifPresent(order -> {
-                throw new DuplicateOrderException(command.getIdempotencyKey());
-            });
-        } else {
-            // Normal path: check DB for duplicates
-            orderRepository.findByIdempotencyKey(command.getIdempotencyKey()).ifPresent(order -> {
-                throw new DuplicateOrderException(command.getIdempotencyKey());
-            });
+            throw new DuplicateOrderException(command.getIdempotencyKey());
         }
+        // Safety net: check DB in case cache expired or was evicted
+        orderRepository.findByIdempotencyKey(command.getIdempotencyKey()).ifPresent(order -> {
+            throw new DuplicateOrderException(command.getIdempotencyKey());
+        });
 
         String orderId = UUID.randomUUID().toString();
         List<InventoryReservation> reservations = reserveAllItems(command, orderId);

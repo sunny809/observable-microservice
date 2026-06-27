@@ -153,15 +153,106 @@ public class O11yKitProperties {
     /**
      * Configuration for inbound HTTP server observability features.
      *
-     * <p>This class reserves the {@code o11y.kit.server} namespace for future
-     * sprint work (handler enable/disable flags, exclusion patterns, etc.).
-     * No fields are bound this sprint — declaring the placeholder here lets
-     * users add the namespace to their {@code application.yml} without Spring
-     * Boot reporting an "unknown property" warning once future fields land.
+     * <p>Allows controlling which requests are observed by the
+     * {@link io.o11y.kit.spring.webmvc.ServerObservationHandler}, which
+     * URL patterns to exclude, and whether Micrometer metrics are emitted.
      *
      * @since 0.2.0-alpha
      */
     public static class Server {
-        // Intentionally empty — namespace reservation only.
+
+        /**
+         * Master switch for all server-side observability features.
+         *
+         * <p>When {@code false}, the {@code ServerObservationHandler} interceptor
+         * is not registered, and no server-side HTTP metrics are collected.
+         * Defaults to {@code true}.
+         */
+        private boolean enabled = true;
+
+        /**
+         * URL patterns to exclude from server-side HTTP observation.
+         *
+         * <p>Requests matching these patterns are not recorded in
+         * {@code o11y.server.requests}. Defaults to actuator and health endpoints.
+         */
+        private List<String> excludePatterns = new java.util.ArrayList<>(
+                java.util.List.of("/actuator/**", "/health/**"));
+
+        /**
+         * Configuration for server-side HTTP metrics emission.
+         */
+        @NestedConfigurationProperty
+        private Metrics metrics = new Metrics();
+
+        /**
+         * Returns whether server-side observability is enabled.
+         *
+         * @return {@code true} if enabled (the default), {@code false} otherwise
+         */
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        /**
+         * Returns the URL patterns to exclude from observation.
+         *
+         * @return the list of Ant-style URL patterns (never {@code null})
+         */
+        public List<String> getExcludePatterns() {
+            return excludePatterns;
+        }
+
+        public void setExcludePatterns(List<String> excludePatterns) {
+            this.excludePatterns = excludePatterns;
+        }
+
+        /**
+         * Returns the server metrics configuration.
+         *
+         * @return the metrics configuration (never {@code null})
+         */
+        public Metrics getMetrics() {
+            return metrics;
+        }
+
+        public void setMetrics(Metrics metrics) {
+            this.metrics = metrics;
+        }
+
+        /**
+         * Configuration for server-side HTTP metrics emission.
+         *
+         * @since 0.4.0-beta
+         */
+        public static class Metrics {
+
+            /**
+             * Whether server-side HTTP metrics emission is enabled.
+             *
+             * <p>Defaults to {@code true}. When {@code false}, the
+             * {@code ServerObservationHandler} interceptor remains installed
+             * (for trace ID resolution and response header injection) but
+             * emits no Micrometer timers or counters.
+             */
+            private boolean enabled = true;
+
+            /**
+             * Returns whether server metrics emission is enabled.
+             *
+             * @return {@code true} if enabled (the default), {@code false} otherwise
+             */
+            public boolean isEnabled() {
+                return enabled;
+            }
+
+            public void setEnabled(boolean enabled) {
+                this.enabled = enabled;
+            }
+        }
     }
 }

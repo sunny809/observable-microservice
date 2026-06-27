@@ -1,9 +1,9 @@
 # o11y-kit
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/example/order-demo/ci.yml?branch=main)](https://github.com/example/order-demo/actions)
-[![Version](https://img.shields.io/badge/version-0.2.0--alpha-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.0--beta-blue)](CHANGELOG.md)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.0+-brightgreen)](https://spring.io/projects/spring-boot)
-[![Java](https://img.shields.io/badge/Java-17%2B-blue)](https://openjdk.org)
+[![Java](https://img.shields.io/badge/Java-21%2B-blue)](https://openjdk.org)
 [![Coverage](https://img.shields.io/badge/coverage-%3E%3D80%25-brightgreen)](../.github/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-yellow)](../LICENSE)
 
@@ -38,7 +38,7 @@ Spring Boot already bundles Micrometer, so why a separate library?
 <dependency>
     <groupId>io.o11y.kit</groupId>
     <artifactId>o11y-kit-spring-boot-starter</artifactId>
-    <version>0.2.0-alpha</version>
+    <version>0.4.0-beta</version>
 </dependency>
 ```
 
@@ -115,6 +115,7 @@ RestClient inventoryRestClient(RestClient.Builder builder) {
 | **micrometer** | `o11y-kit-micrometer` | `MicrometerHttpMetricRecorder` — Micrometer-backed implementation | 0.1.0 |
 | **spring-webmvc** | `o11y-kit-spring-webmvc` | Inbound: `ServerObservationHandler`. Outbound: `RestTemplateObservationInterceptor`, `RestClientObservationInterceptor`, `AbstractClientObservation` | 0.1.0 |
 | **spring-webflux** | `o11y-kit-spring-webflux` | `ClientObservationHandler` — WebClient `ExchangeFilterFunction` | 0.1.0 |
+| **spring-aop** | `o11y-kit-spring-aop` | `@Observed` annotation — AOP-based method-level observation | 0.4.0-beta |
 | **spring-boot-autoconfigure** | `o11y-kit-spring-boot-autoconfigure` | Auto-configurations + `O11yKitProperties` binding | 0.1.0 |
 | **spring-boot-starter** | `o11y-kit-spring-boot-starter` | Aggregator — one dependency to import all modules | 0.1.0 |
 | **test** | `o11y-kit-test` | `OtelTestHarness`, `MetricsAssertions`, `RecordedSpan` for integration tests | 0.2.0 |
@@ -129,12 +130,12 @@ RestClient inventoryRestClient(RestClient.Builder builder) {
         +------------------------+------------------------+
         |                        |                        |
         v                        v                        v
-+---------------+      +-------------------+    +----------------------+
-| o11y-kit-     |      | o11y-kit-spring-  |    | o11y-kit-spring-     |
-| micrometer    |      | webmvc            |    | webflux              |
-+-------+-------+      +---------+---------+    +-----------+----------+
-        |                        |                          |
-        +------------+-----------+--------------------------+
++---------------+      +-------------------+    +----------------------+    +-----------------+
+| o11y-kit-     |      | o11y-kit-spring-  |    | o11y-kit-spring-     |    | o11y-kit-spring- |
+| micrometer    |      | webmvc            |    | webflux              |    | aop             |
++-------+-------+      +---------+---------+    +-----------+----------+    +--------+--------+
+        |                        |                          |                        |
+        +------------+-----------+--------------------------+------------------------+
                      |
                      v
         +------------------------------+
@@ -162,7 +163,9 @@ All properties bind under `o11y.kit`.
 |----------|------|---------|-------|-------------|
 | `o11y.kit.client.enabled` | boolean | `true` | 0.2.0 | Master switch for outbound HTTP observability. When `false`, client customizers are not registered. |
 | `o11y.kit.client.metrics.enabled` | boolean | `true` | 0.2.0 | Controls emission of client-side Micrometer timers and counters. |
-| `o11y.kit.server.*` | *reserved* | — | 0.2.0 | Namespace for inbound observability properties (enable/disable, exclusion patterns). Not yet bound. |
+| `o11y.kit.server.enabled` | boolean | `true` | 0.4.0-beta | Master switch for inbound HTTP observability. When `false`, server interceptor is not registered. |
+| `o11y.kit.server.exclude-patterns` | list | `/actuator/**`, `/health/**` | 0.4.0-beta | Ant-style URL patterns excluded from server-side HTTP metrics. |
+| `o11y.kit.server.metrics.enabled` | boolean | `true` | 0.4.0-beta | Controls emission of server-side Micrometer timers. When `false`, trace ID resolution continues but metrics are not recorded. |
 
 Example:
 
@@ -184,8 +187,79 @@ o11y:
 | `o11y.server.requests` | Timer | `method`, `uri`, `status` | Inbound Controller request duration |
 | `o11y.client.requests` | Timer | `method`, `host`, `status` | Outbound HTTP call round-trip duration |
 | `o11y.client.errors` | Counter | `method`, `host`, `error` | Outbound call errors (timeout, connection refused, DNS, cancelled) |
+| `o11y.observed.duration` | Timer | `class`, `method`, `tags`*, `outcome` | Duration of `@Observed`-annotated methods |
 
 Status codes are bucketed into `2xx`, `4xx`, `5xx` groups to prevent high-cardinality tag explosion.
+The `o11y.observed.duration` metric includes user-defined tags from the annotation's `tags` attribute.
+
+---
+
+## Method-level observation
+
+Since v0.4.0-beta, o11y-kit provides an `@Observed` annotation for **declarative method-level observation**.
+Annotate any Spring-managed bean method and o11y-kit automatically records its execution duration as a Micrometer timer.
+
+### Usage
+
+```java
+import io.o11y.kit.spring.aop.Observed;
+import org.springframework.stereotype.Service;
+
+@Service
+public class PaymentService {
+
+    @Observed
+    public String processPayment(String orderId) {
+        // method logic — duration recorded in o11y.observed.duration automatically
+    }
+
+    @Observed(name = "payment.check",
+              tags = {"env", "production"},
+              description = "Payment authorization check duration")
+    public boolean authorize(String amount) {
+        // custom metric name and tags
+    }
+}
+```
+
+### Requirements
+
+Add `spring-boot-starter-aop` to your project:
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-aop</artifactId>
+</dependency>
+```
+
+### Annotation Attributes
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `name` | String | `o11y.observed.duration` | Override the metric name |
+| `tags` | String[] | `{}` | Additional metric tags in key-value pairs |
+| `description` | String | `""` | Description for the Micrometer metric |
+
+### Tags
+
+The `o11y.observed.duration` timer includes the following tags:
+
+| Tag | Description | Example |
+|-----|-------------|---------|
+| `class` | Simple name of the annotated class | `PaymentService` |
+| `method` | Name of the annotated method | `processPayment` |
+| `outcome` | Execution result | `success` or `error` |
+| *user tags* | As specified in `@Observed(tags=...)` | `env=production` |
+
+### When to use @Observed
+
+| Scenario | Recommended approach |
+|----------|---------------------|
+| All HTTP endpoints | o11y-kit auto-configuration (zero annotations) |
+| A specific service method | `@Observed` |
+| A non-HTTP method (scheduler, listener, etc.) | `@Observed` |
+| Fine-grained breakdown of a slow handler | `@Observed` on individual service methods |
 
 ---
 
@@ -279,11 +353,17 @@ No Spring Cloud, Sleuth, or actuator required (actuator recommended for Promethe
 |---------|-------|--------|
 | v0.1.0-alpha | WebClient + Controller MVP | ✅ Done |
 | v0.1.1-alpha | Code review bugfixes (13 fixes) | ✅ Done |
-| **v0.2.0-alpha** | **RestTemplate + RestClient + Static Analysis** | **← Current** |
-| v0.3.0-beta | `@Observed` annotation + Feign + NullAway | Planned |
-| v0.4.0-beta | Production hardening + mutation testing + benchmarks | Planned |
-| v0.5.0-rc.1 | MDC chain + adapter SPI | Planned |
+| v0.2.0-alpha | RestTemplate + RestClient + Static Analysis | ✅ Done |
+| v0.3.0-beta | Internal transaction latency + SagaObservability + ECS logging | In progress |
+| **v0.4.0-beta** | **`@Observed` annotation + Server configuration properties** | **← Current** |
+| v0.5.0-rc.1 | MDC chain + adapter SPI + declarative HTTP interfaces | Planned |
 | v1.0.0-GA | Maven Central + SonarCloud + docs site | Q4 2026 |
+
+**v0.3.0 changes from original plan:**
+- Replaced Feign support (deprecated per FAQ) with **declarative HTTP interfaces** (deferred to v0.5.0)
+- Replaced `@Observed` annotation (moved to v0.4.0) with **SagaLogPort timing extension** — lower-friction, no AOP needed
+- **Added** internal transaction latency breakdown as the primary theme (stakeholder-driven)
+- **Added** ECS-compatible structured logging interface for ELK consumption
 
 [CHANGELOG.md](CHANGELOG.md) for full release notes.
 

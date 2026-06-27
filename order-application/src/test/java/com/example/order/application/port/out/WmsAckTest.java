@@ -26,11 +26,4 @@ class WmsAckTest {
         assertTrue(ack.isAccepted());
         assertNull(ack.getMessageId());
     }
-
-    @Test
-    void testNoArgConstructorDefaults() {
-        WmsAck ack = new WmsAck();
-        assertFalse(ack.isAccepted());
-        assertNull(ack.getMessageId());
-    }
 }

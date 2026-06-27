@@ -1,6 +1,7 @@
 package com.example.order.adapter.inbound.rest;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
@@ -59,6 +60,7 @@ public class PlaceOrderRequest {
         @NotBlank
         private String sku;
 
+        @Min(value = 1, message = "quantity must be at least 1")
         private int quantity;
 
         public String getSku() {

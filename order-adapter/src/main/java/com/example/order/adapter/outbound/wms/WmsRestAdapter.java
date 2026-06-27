@@ -27,9 +27,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * for asynchronous HTTP communication. The {@link #sendInstruction} method
  * returns a {@link CompletableFuture} that completes when the WMS responds.
  *
- * <p><strong>Known issue:</strong> The OpenTelemetry span lifecycle is tied to
- * the synchronous method scope, not the async WebClient completion. The span
- * ends in the {@code finally} block before the HTTP response is received.
+ * <p>Protected by Resilience4j circuit breaker and retry mechanisms.
  */
 @Component
 @Primary
@@ -68,15 +66,12 @@ public class WmsRestAdapter implements WmsPort {
                     .retrieve()
                     .bodyToMono(WmsAckResponse.class)
                     .map(WmsAckResponse::toDomain)
+                    .doOnError(ex -> {
+                        span.recordException(ex);
+                        log.error("Failed to send instruction to WMS", ex);
+                    })
+                    .doFinally(sig -> span.end())
                     .toFuture();
-        } catch (Exception ex) {
-            span.recordException(ex);
-            log.error("Failed to send instruction to WMS", ex);
-            CompletableFuture<WmsAck> failed = new CompletableFuture<>();
-            failed.completeExceptionally(ex);
-            return failed;
-        } finally {
-            span.end();
         }
     }
 
@@ -90,8 +85,6 @@ public class WmsRestAdapter implements WmsPort {
      */
     public CompletableFuture<WmsAck> handleWmsFallback(WmsShipmentInstruction instruction, Throwable throwable) {
         log.warn("WMS fallback triggered for order {}", instruction.getOrderId(), throwable);
-        CompletableFuture<WmsAck> failed = new CompletableFuture<>();
-        failed.completeExceptionally(new RuntimeException("WMS service unavailable", throwable));
-        return failed;
+        return CompletableFuture.failedFuture(new RuntimeException("WMS service unavailable", throwable));
     }
 }

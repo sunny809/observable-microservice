@@ -108,6 +108,20 @@ class OrderPlacementSagaTest {
     }
 
     @Test
+    @DisplayName("cache hit should throw DuplicateOrderException immediately without DB query")
+    void testPlaceOrderCacheHitThrowsWithoutDbQuery() {
+        PlaceOrderCommand command = createCommand();
+
+        when(idempotencyCache.exists("idem-key-1")).thenReturn(true);
+
+        assertThrows(DuplicateOrderException.class, () -> saga.placeOrder(command));
+
+        verify(orderRepository, never()).findByIdempotencyKey(anyString());
+        verify(inventoryPort, never()).occupy(any());
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("insufficient inventory should throw InsufficientInventoryException and not save order")
     void testPlaceOrderInsufficientInventoryThrows() {
         PlaceOrderCommand command = createCommand();

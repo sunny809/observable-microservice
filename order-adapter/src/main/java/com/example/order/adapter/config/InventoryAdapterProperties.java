@@ -1,13 +1,18 @@
 package com.example.order.adapter.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+/**
+ * Configuration properties for the Inventory service adapter.
+ *
+ * <p>Reads {@code inventory.base-url} from application configuration.
+ */
 @Component
+@ConfigurationProperties(prefix = "inventory")
 public class InventoryAdapterProperties {
 
-    @Value("${inventory.base-url:http://localhost:8081}")
-    private String baseUrl;
+    private String baseUrl = "http://localhost:8081";
 
     public String getBaseUrl() {
         return baseUrl;

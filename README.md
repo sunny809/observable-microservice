@@ -218,6 +218,14 @@ observable-microservice/
 
 ---
 
+## Documentation
+
+- [Implementation Guide](docs/IMPLEMENTATION_GUIDE.md) — Developer-focused walkthrough of the codebase: architecture, request flow, design patterns, and how to extend the service.
+- [Architecture Decision Records](ARCHITECTURE.md) — Key architectural decisions and their trade-offs.
+- [Sprint Roadmap](docs/ROADMAP.md) — Release plan and current sprint status.
+
+---
+
 ## License
 
 This project is licensed under the MIT License.

@@ -56,6 +56,16 @@ public class InventoryReservation {
                 null);
     }
 
+    /**
+     * Creates a reservation with a specific reservation ID.
+     * Used for reconstructing reservations from persisted data (e.g., WMS callback).
+     */
+    public static InventoryReservation withId(String reservationId, String sku,
+                                              int quantity, String orderId) {
+        return new InventoryReservation(reservationId, sku, quantity, orderId,
+                ReservationStatus.PENDING, Instant.now(), null);
+    }
+
     public String getReservationId() {
         return reservationId;
     }

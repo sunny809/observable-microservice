@@ -82,8 +82,7 @@ public class OrderPersistenceAdapter implements OrderRepositoryPort {
             }
             return objectMapper.writeValueAsString(items);
         } catch (Exception e) {
-            log.warn("Failed to serialize order items, returning empty JSON array", e);
-            return "[]";
+            throw new IllegalStateException("Failed to serialize order items", e);
         }
     }
 
@@ -94,8 +93,8 @@ public class OrderPersistenceAdapter implements OrderRepositoryPort {
         try {
             return objectMapper.readValue(itemsJson, new TypeReference<List<OrderItem>>() {});
         } catch (Exception e) {
-            log.warn("Failed to deserialize order items from JSON, returning empty list", e);
-            return Collections.emptyList();
+            log.error("Failed to deserialize order items from JSON — data integrity issue for itemsJson='{}'", itemsJson, e);
+            throw new IllegalStateException("Failed to deserialize order items — possible data corruption", e);
         }
     }
 

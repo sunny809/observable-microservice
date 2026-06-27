@@ -114,6 +114,28 @@ class PlaceOrderRequestTest {
         assertEquals(10, request.getItems().get(0).getQuantity());
     }
 
+    @Test
+    void testZeroQuantityFailsValidation() {
+        PlaceOrderRequest request = buildValidRequest();
+        request.getItems().get(0).setQuantity(0);
+
+        Set<ConstraintViolation<PlaceOrderRequest>> violations = validator.validate(request);
+        assertFalse(violations.isEmpty());
+        assertTrue(violations.stream()
+                .anyMatch(v -> v.getPropertyPath().toString().contains("items[0].quantity")));
+    }
+
+    @Test
+    void testNegativeQuantityFailsValidation() {
+        PlaceOrderRequest request = buildValidRequest();
+        request.getItems().get(0).setQuantity(-1);
+
+        Set<ConstraintViolation<PlaceOrderRequest>> violations = validator.validate(request);
+        assertFalse(violations.isEmpty());
+        assertTrue(violations.stream()
+                .anyMatch(v -> v.getPropertyPath().toString().contains("items[0].quantity")));
+    }
+
     private PlaceOrderRequest buildValidRequest() {
         PlaceOrderRequest request = new PlaceOrderRequest();
         request.setCustomerId("cust-1");

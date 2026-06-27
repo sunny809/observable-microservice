@@ -21,7 +21,7 @@ spring:
       leak-detection-threshold: 60000
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate.format_sql: true
@@ -52,6 +52,8 @@ app:
   kafka:
     wms:
       topic: wms.shipment.instructions
+  inventory:
+    confirmation-delay-seconds: 60
 
 management:
   endpoints:

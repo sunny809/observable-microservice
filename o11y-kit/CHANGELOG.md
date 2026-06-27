@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.0-beta] — 2026-10-01 (planned)
+
+Sprint 4: Method-level observation via `@Observed` annotation + server configuration properties.
+
+### Added
+
+- **o11y-kit-spring-aop**: New module providing the `@Observed` annotation for AOP-based method-level observation.
+  - `@Observed` — annotation for marking Spring bean methods (supports custom name, tags, description).
+  - `ObservedAspect` — `@Around` advice that records execution duration as `o11y.observed.duration` Micrometer Timer with `outcome` tag.
+  - `ObservedAutoConfiguration` — auto-configuration enabling AspectJ auto-proxying.
+- **o11y-kit-spring-boot-autoconfigure**: `O11yKitProperties.Server` namespace is now fully bound:
+  - `o11y.kit.server.enabled` (default `true`) — master switch for server-side observation.
+  - `o11y.kit.server.exclude-patterns` (default `/actuator/**`, `/health/**`) — Ant-style exclusion patterns.
+  - `o11y.kit.server.metrics.enabled` (default `true`) — controls Micrometer timer emission.
+- **o11y-kit-spring-boot-autoconfigure**: `ObservationWebMvcAutoConfiguration` now respects `o11y.kit.server.enabled` and `o11y.kit.server.exclude-patterns`.
+
+### Changed
+
+- **ObservedAspect**: Removed duplicate timer recording (base timer without `outcome` tag). Each invocation now records exactly one timer with the `outcome` dimension.
+- **ObservedAspect**: `catch(Exception)` changed to `catch(Throwable)` so `Error` subclasses (e.g., `OutOfMemoryError`) are correctly recorded as `outcome=error`.
+- **ObservedAspect**: Removed unbounded `ConcurrentHashMap` timer cache. Timer lookup is now delegated to Micrometer's `MeterRegistry` which handles deduplication internally.
+- **o11y-kit-spring-webflux**: `opentelemetry-api` is now `<optional>true</optional>`, consistent with the WebMVC module. WebFlux users who only want metrics are no longer forced to have OTel on the classpath.
+- **o11y-kit-micrometer**: Removed hardcoded `assertj-core` version; now managed by `spring-boot-dependencies` BOM.
+- **o11y-kit-spring-aop**: Removed duplicate `micrometer-core` test-scoped dependency (already declared as optional compile).
+
+### New metric
+
+| Metric | Type | Tags | Since |
+|--------|------|------|-------|
+| `o11y.observed.duration` | Timer | `class`, `method`, `tags*`, `outcome` | 0.4.0-beta |
+
+### Testing
+
+- o11y-kit-spring-aop: **8 tests** covering metric recording, custom names, custom tags, error outcomes (Exception + Error), odd-length tag validation, custom description.
+- o11y-kit-spring-boot-autoconfigure: expanded to cover server properties binding.
+
+---
+
 ## [0.2.0-alpha] — 2026-08-01
 
 Sprint 2: Unified HTTP client observability for all major Spring sync clients + static analysis toolchain.

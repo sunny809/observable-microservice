@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.o11y.kit</groupId>
         <artifactId>o11y-kit</artifactId>
-        <version>0.2.0-alpha</version>
+        <version>0.4.0-beta</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -36,7 +36,6 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.27.3</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

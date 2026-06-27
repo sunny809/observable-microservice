@@ -114,15 +114,13 @@ class OrderPersistenceAdapterTest {
     }
 
     @Test
-    void testFindByIdWithInvalidItemsJsonReturnsEmptyList() {
+    void testFindByIdWithInvalidItemsJsonThrowsDataIntegrityException() {
         OrderEntity entity = new OrderEntity("ord-1", "cust-1", "idem-1", "resv-1",
                 "CREATED", LocalDateTime.now());
         entity.setItems("not-json");
         when(repository.findById("ord-1")).thenReturn(Optional.of(entity));
 
-        Optional<Order> result = adapter.findById("ord-1");
-
-        assertTrue(result.isPresent());
-        assertTrue(result.get().getItems().isEmpty());
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adapter.findById("ord-1"));
+        assertTrue(ex.getMessage().contains("data corruption"));
     }
 }

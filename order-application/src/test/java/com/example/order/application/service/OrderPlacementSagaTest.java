@@ -52,13 +52,20 @@ class OrderPlacementSagaTest {
         wmsPort = mock(WmsPort.class);
         tmsPort = mock(TmsPort.class);
         confirmationScheduler = mock(InventoryConfirmationScheduler.class);
-        transactionTemplate = mock(TransactionTemplate.class);
+        // Use a real TransactionTemplate backed by a no-op PlatformTransactionManager
+        // to avoid ByteBuddy instrumentation issues on JDK 25+
+        transactionTemplate = new TransactionTemplate(
+                new org.springframework.transaction.support.AbstractPlatformTransactionManager() {
+                    @Override
+                    protected Object doGetTransaction() { return new Object(); }
+                    @Override
+                    protected void doBegin(Object t, org.springframework.transaction.TransactionDefinition d) {}
+                    @Override
+                    protected void doCommit(org.springframework.transaction.support.DefaultTransactionStatus s) {}
+                    @Override
+                    protected void doRollback(org.springframework.transaction.support.DefaultTransactionStatus s) {}
+                });
         idempotencyCache = mock(IdempotencyCachePort.class);
-        doAnswer(invocation -> {
-            Consumer<TransactionStatus> consumer = invocation.getArgument(0);
-            consumer.accept(null);
-            return null;
-        }).when(transactionTemplate).executeWithoutResult(any());
         saga = new OrderPlacementSaga(orderRepository, inventoryPort, sagaLogPort,
                 eventPublisher, wmsPort, tmsPort, confirmationScheduler, transactionTemplate, idempotencyCache);
     }

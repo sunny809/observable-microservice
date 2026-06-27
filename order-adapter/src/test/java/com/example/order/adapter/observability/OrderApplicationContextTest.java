@@ -82,6 +82,7 @@ class OrderApplicationContextTest {
      * {@code spring.factories} / {@code AutoConfiguration.imports}.
      */
     @SpringBootApplication(
+            scanBasePackages = {"com.example.order.adapter.observability"},
             exclude = {
                     org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
                     org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class,
@@ -90,7 +91,8 @@ class OrderApplicationContextTest {
                     org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
                     org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration.class,
                     org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration.class,
-                    org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration.class
+                    org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration.class,
+                    io.o11y.kit.spring.aop.ObservedAutoConfiguration.class
             })
     static class TestApp {
 

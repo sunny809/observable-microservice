@@ -4,6 +4,15 @@ Feature: TMS dispatch flow
     Given inventory service returns reservation success
     And WMS service accepts shipment instruction
 
+  Scenario: Full saga lifecycle — place order through WMS callback to TMS dispatch
+    When the client submits a place order request
+    Then the sync response status should be 201
+    And the order status should eventually be WMS_ACKED
+    When the WMS callback is called with the order ID
+    Then the callback response status should be 200
+    And the order status should eventually be TMS_DISPATCHED
+    And the TMS service should receive a dispatch instruction
+
   Scenario: TMS accepts dispatch after WMS picking completes
     When the client submits a place order request
     Then the sync response status should be 201

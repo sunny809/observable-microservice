@@ -4,7 +4,9 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -17,7 +19,11 @@ public class TmsSteps {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private HttpHelper httpHelper;
+
     private String orderId;
+    private ResponseEntity<Map> callbackResponse;
 
     @Given("TMS service accepts dispatch instruction")
     public void tmsServiceAcceptsDispatchInstruction() {
@@ -46,11 +52,36 @@ public class TmsSteps {
     @When("WMS picking is completed for the order")
     public void wmsPickingIsCompletedForTheOrder() {
         orderId = (String) PlaceOrderSteps.lastResponse.getBody().get("orderId");
-        // Simulate WMS picking completion by publishing event directly
-        // In a real scenario, this would be triggered by a WMS callback
-        // For BDD testing, we rely on the saga's internal event handling
-        // The order should transition from WMS_ACKED to WMS_PICKED
-        // and then publish TmsInstructionRequiredEvent
+        callbackResponse = httpHelper.postWmsPickingCallback(orderId);
+    }
+
+    @When("the WMS callback is called with the order ID")
+    public void wmsCallbackIsCalledWithOrderId() {
+        orderId = (String) PlaceOrderSteps.lastResponse.getBody().get("orderId");
+        callbackResponse = httpHelper.postWmsPickingCallback(orderId);
+    }
+
+    @When("the WMS callback is called with order ID {string}")
+    public void wmsCallbackIsCalledWithOrderId(String predefinedOrderId) {
+        callbackResponse = httpHelper.postWmsPickingCallback(predefinedOrderId);
+    }
+
+    @Then("the callback response status should be {int}")
+    public void theCallbackResponseStatusShouldBe(int statusCode) {
+        assertThat(callbackResponse.getStatusCode().value()).isEqualTo(statusCode);
+    }
+
+    @Given("a CREATED order exists in the database")
+    public void aCreatedOrderExistsInTheDatabase() {
+        jdbcTemplate.execute("INSERT INTO orders (id, customer_id, idempotency_key, " +
+                "reservation_id, status, created_at, items, reservation_ids) " +
+                "VALUES ('ord-pre-created', 'cust-pre', 'idem-pre', 'resv-pre', " +
+                "'CREATED', NOW(), '[]', '[]')");
+    }
+
+    @When("the WMS callback is called with the pre-created order ID")
+    public void wmsCallbackIsCalledWithPreCreatedOrderId() {
+        callbackResponse = httpHelper.postWmsPickingCallback("ord-pre-created");
     }
 
     @Then("the order status should eventually be {string}")

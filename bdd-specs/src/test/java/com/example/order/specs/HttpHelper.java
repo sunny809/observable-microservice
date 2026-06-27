@@ -56,4 +56,11 @@ public class HttpHelper {
         headers.set("traceparent", traceparent);
         return headers;
     }
+
+    public ResponseEntity<Map> postWmsPickingCallback(String orderId) {
+        String body = String.format("{\"orderId\":\"%s\"}", orderId);
+        HttpEntity<String> request = new HttpEntity<>(body, defaultHeaders());
+        return restTemplate.postForEntity(
+                "/api/v1/orders/wms/callback/picking-completed", request, Map.class);
+    }
 }

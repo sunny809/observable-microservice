@@ -11,7 +11,6 @@ import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -60,15 +59,19 @@ public class WmsCallbackController {
     private List<InventoryReservation> rebuildReservations(Order order) {
         List<OrderItem> items = order.getItems();
         List<String> reservationIds = order.getAllReservationIds();
-        List<InventoryReservation> reservations = new ArrayList<>();
 
+        if (reservationIds.size() != items.size()) {
+            throw new IllegalStateException(
+                    "Reservation ID count mismatch: items=" + items.size() +
+                    ", reservationIds=" + reservationIds.size() +
+                    " for order " + order.getOrderId());
+        }
+
+        List<InventoryReservation> reservations = new ArrayList<>();
         for (int i = 0; i < items.size(); i++) {
             OrderItem item = items.get(i);
-            String rid = i < reservationIds.size()
-                    ? reservationIds.get(i)
-                    : UUID.randomUUID().toString();
             reservations.add(InventoryReservation.withId(
-                    rid, item.getSku(), item.getQuantity(), order.getOrderId()));
+                    reservationIds.get(i), item.getSku(), item.getQuantity(), order.getOrderId()));
         }
         return reservations;
     }

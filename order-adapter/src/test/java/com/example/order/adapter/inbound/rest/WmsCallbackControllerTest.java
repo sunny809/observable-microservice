@@ -92,27 +92,20 @@ class WmsCallbackControllerTest {
     }
 
     @Test
-    void shouldRebuildReservationsWithAllReservationIds() {
+    void shouldThrowWhenReservationIdCountDoesNotMatchItems() {
         Order order = new Order("ord-1", "cust-1",
                 List.of(new OrderItem("SKU-1", 2), new OrderItem("SKU-2", 3)),
                 OrderStatus.WMS_ACKED, "idem-1", "resv-1", Instant.now(),
-                List.of("resv-1", "resv-2"));
+                List.of("resv-1"));  // only 1 ID for 2 items
         when(orderRepository.findById("ord-1")).thenReturn(Optional.of(order));
 
         WmsCallbackRequest request = new WmsCallbackRequest();
         request.setOrderId("ord-1");
 
-        controller.onPickingCompleted(request);
+        assertThatThrownBy(() -> controller.onPickingCompleted(request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Reservation ID count mismatch");
 
-        ArgumentCaptor<WmsPickingCompletedEvent> captor =
-                ArgumentCaptor.forClass(WmsPickingCompletedEvent.class);
-        verify(eventPublisher).publish(captor.capture());
-
-        List<InventoryReservation> reservations = captor.getValue().getReservations();
-        assertThat(reservations).hasSize(2);
-        assertThat(reservations.get(0).getReservationId()).isEqualTo("resv-1");
-        assertThat(reservations.get(1).getReservationId()).isEqualTo("resv-2");
-        assertThat(reservations.get(0).getSku()).isEqualTo("SKU-1");
-        assertThat(reservations.get(1).getSku()).isEqualTo("SKU-2");
+        verifyNoInteractions(eventPublisher);
     }
 }

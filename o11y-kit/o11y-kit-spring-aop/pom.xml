@@ -21,6 +21,12 @@
             <artifactId>o11y-kit-api</artifactId>
         </dependency>
 
+        <!-- Spring Boot AutoConfiguration (for @AutoConfiguration, @ConditionalOnClass) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+
         <!-- Spring AOP for @Observed aspect -->
         <dependency>
             <groupId>org.springframework</groupId>

@@ -1,5 +1,6 @@
 package com.example.order.adapter.inbound.rest.exception;
 
+import com.example.order.adapter.inbound.rest.OrderNotFoundException;
 import com.example.order.application.domain.DuplicateOrderException;
 import com.example.order.application.domain.InsufficientInventoryException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  *   <li>{@link DuplicateOrderException} → 409 CONFLICT</li>
  *   <li>{@link InsufficientInventoryException} → 422 UNPROCESSABLE_ENTITY</li>
  *   <li>{@link MethodArgumentNotValidException} → 400 BAD_REQUEST</li>
+ *   <li>{@link OrderNotFoundException} → 404 NOT_FOUND</li>
  *   <li>All others → 500 INTERNAL_SERVER_ERROR</li>
  * </ul>
  *
@@ -56,6 +58,18 @@ public class RestExceptionHandler implements Ordered {
     @ExceptionHandler(InsufficientInventoryException.class)
     public ResponseEntity<Map<String, Object>> handleInsufficient(InsufficientInventoryException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
+    /**
+     * Handles order not found in WMS callback.
+     *
+     * @param ex the order not found exception
+     * @return 404 NOT_FOUND with the error message
+     */
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleOrderNotFound(OrderNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of("error", ex.getMessage()));
     }
 

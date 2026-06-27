@@ -4,6 +4,7 @@ import com.example.order.application.domain.InventoryReservation;
 import com.example.order.application.port.out.ConfirmReservationCommand;
 import com.example.order.application.port.out.InventoryPort;
 import com.example.order.application.port.out.InventoryConfirmationScheduler;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,7 +35,7 @@ public class InventoryConfirmationSchedulerAdapter implements InventoryConfirmat
     public InventoryConfirmationSchedulerAdapter(
             InventoryPort inventoryPort,
             @Value("${app.inventory.confirmation-delay-seconds:60}") long confirmationDelaySeconds) {
-        this.inventoryPort = inventoryPort;
+        this.inventoryPort = Objects.requireNonNull(inventoryPort, "inventoryPort must not be null");
         this.confirmationDelaySeconds = confirmationDelaySeconds;
         this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "inventory-confirmation-scheduler");

@@ -34,6 +34,10 @@ public class OrderEntity {
     @Column(name = "items", columnDefinition = "TEXT")
     private String items;
 
+    @Lob
+    @Column(name = "reservation_ids", columnDefinition = "TEXT")
+    private String reservationIds;
+
     public OrderEntity() {
     }
 
@@ -80,5 +84,13 @@ public class OrderEntity {
 
     public void setItems(String items) {
         this.items = items;
+    }
+
+    public String getReservationIds() {
+        return reservationIds;
+    }
+
+    public void setReservationIds(String reservationIds) {
+        this.reservationIds = reservationIds;
     }
 }

@@ -123,4 +123,46 @@ class OrderPersistenceAdapterTest {
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> adapter.findById("ord-1"));
         assertTrue(ex.getMessage().contains("data corruption"));
     }
+
+    @Test
+    void testSaveSerializesReservationIds() {
+        List<String> resvIds = List.of("resv-abc", "resv-def");
+        Order order = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 2)),
+                OrderStatus.CREATED, "idem-1", "resv-abc", java.time.Instant.now(), resvIds);
+
+        adapter.save(order);
+
+        verify(repository).save(argThat(entity ->
+                entity.getReservationIds() != null &&
+                entity.getReservationIds().contains("resv-abc") &&
+                entity.getReservationIds().contains("resv-def")));
+    }
+
+    @Test
+    void testFindByIdDeserializesReservationIds() {
+        OrderEntity entity = new OrderEntity("ord-1", "cust-1", "idem-1", "resv-abc",
+                "CREATED", LocalDateTime.now());
+        entity.setItems("[]");
+        entity.setReservationIds("[\"resv-abc\",\"resv-def\"]");
+        when(repository.findById("ord-1")).thenReturn(Optional.of(entity));
+
+        Optional<Order> result = adapter.findById("ord-1");
+
+        assertTrue(result.isPresent());
+        assertEquals(List.of("resv-abc", "resv-def"), result.get().getAllReservationIds());
+    }
+
+    @Test
+    void testFindByIdReturnsEmptyReservationIdsWhenNull() {
+        OrderEntity entity = new OrderEntity("ord-1", "cust-1", "idem-1", "resv-abc",
+                "CREATED", LocalDateTime.now());
+        entity.setItems("[]");
+        entity.setReservationIds(null);
+        when(repository.findById("ord-1")).thenReturn(Optional.of(entity));
+
+        Optional<Order> result = adapter.findById("ord-1");
+
+        assertTrue(result.isPresent());
+        assertTrue(result.get().getAllReservationIds().isEmpty());
+    }
 }

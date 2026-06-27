@@ -289,19 +289,121 @@ BDD Test / WMS                     Controller                      Saga         
 
 ### BDD 测试
 
-`place_order_tms.feature` 的 3 个场景从假阳性转为真实验证：
+#### 新增 feature: `place_order_wms_callback.feature`
 
-| 场景 | 回调后 Saga 推进 | 最终验证 |
-|------|-----------------|---------|
-| TMS 接受 | WMS_PICKED → TMS API 成功 → TMS_DISPATCHED | `TMS_DISPATCHED` + TMS 收到指令 |
-| TMS 拒绝 | WMS_PICKED → TMS API 拒绝 → inventory 释放 → TMS_REJECTED | `TMS_REJECTED` + inventory release |
-| TMS 不可用 | WMS_PICKED → TMS API 503 → inventory 释放 → TMS_REJECTED | `TMS_REJECTED` + inventory release |
+专门验证新回调端点的行为，**独立于** TMS 流程：
+
+```gherkin
+Feature: WMS picking callback
+  As a WMS system
+  I want to notify the order service when picking is complete
+  So that the order saga can proceed to TMS dispatch
+
+  Background:
+    Given inventory service returns reservation success
+    And WMS service accepts shipment instruction
+
+  Scenario: Callback succeeds when order is in WMS_ACKED
+    When the client submits a place order request
+    Then the sync response status should be 201
+    And the order status should eventually be WMS_ACKED
+    When the WMS callback is called with the order ID
+    Then the callback response status should be 200
+    And the order status should eventually be TMS_DISPATCHED
+
+  Scenario: Callback returns 404 for unknown order ID
+    When the WMS callback is called with order ID "non-existent-id"
+    Then the callback response status should be 404
+
+  Scenario: Callback returns 409 when order is not in WMS_ACKED state
+    When the WMS callback is called with order ID "ord-pre-created"
+    Then the callback response status should be 409
+```
+
+> `"ord-pre-created"` 在 step 中通过直接插入 DB 创建一个 CREATED 状态的订单。
+
+#### 修复 `place_order_tms.feature` — 新增完整链路场景
+
+在现有 3 个 TMS 场景前，加一个从下单到回调到 TMS 完成的全链路场景：
+
+```gherkin
+Feature: TMS dispatch flow
+
+  Background:
+    Given inventory service returns reservation success
+    And WMS service accepts shipment instruction
+
+  Scenario: Full saga lifecycle — place → WMS callback → TMS dispatch
+    When the client submits a place order request
+    Then the sync response status should be 201
+    And the order status should eventually be WMS_ACKED
+    When the WMS callback is called with the order ID
+    Then the callback response status should be 200
+    And the order status should eventually be TMS_DISPATCHED
+    And the TMS service should receive a dispatch instruction
+
+  # 以下 3 个是原有场景（修复后真正可跑）
+  Scenario: TMS accepts dispatch after WMS picking completes
+    ...
+```
+
+#### 新增 step definitions
+
+`TmsSteps.java` 中补充：
+
+```java
+@When("the WMS callback is called with the order ID")
+public void wmsCallbackIsCalledWithOrderId() {
+    orderId = (String) PlaceOrderSteps.lastResponse.getBody().get("orderId");
+    callbackResponse = httpHelper.postWmsPickingCallback(orderId);
+}
+
+@When("the WMS callback is called with order ID {string}")
+public void wmsCallbackIsCalledWithOrderId(String predefinedOrderId) {
+    callbackResponse = httpHelper.postWmsPickingCallback(predefinedOrderId);
+}
+
+@Then("the callback response status should be {int}")
+public void theCallbackResponseStatusShouldBe(int statusCode) {
+    assertThat(callbackResponse.getStatusCode().value()).isEqualTo(statusCode);
+}
+```
+
+新增 `WmsCallbackSteps.java` 或放在 `TmsSteps.java`（建议放在 TmsSteps，因为逻辑耦合）。
+
+#### 验证矩阵
+
+修复后 BDD 测试总计从 **15 个场景 → 20 个场景**（+5）：
+
+| # | Feature | 场景 | 状态 |
+|---|---------|------|------|
+| 1-3 | `place_order.feature` | 已有 3 场景 | ✅ 不变 |
+| 4 | `place_order_wms_callback.feature` *(新)* | Callback 200 | **新增** |
+| 5 | *(同上)* | Callback 404 | **新增** |
+| 6 | *(同上)* | Callback 409 | **新增** |
+| 7 | `place_order_tms.feature` *(修改)* | Full saga lifecycle (新增) | **新增** |
+| 8-10 | *(同上)* | TMS 接受/拒绝/不可用 (原有) | ✅ 修复后可真实验证 |
+| 11-13 | `place_order_validation.feature` | 已有 3 场景 | ✅ 不变 |
+| 14-15 | `place_order_trace_id.feature` | 已有 2 场景 | ✅ 不变 |
+| 16-17 | `place_order_multi_item.feature` | 已有 2 场景 | ✅ 不变 |
+| 18-19 | `place_order_wms_failure.feature` | 已有 2 场景 | ✅ 不变 |
+| 20 | `place_order_circuit_breaker.feature` | 已有 1 场景 | ✅ 不变 |
 
 ## 不在此次范围内
 
 - Per-SKU OTel span 属性（Sprint 3-6，已有独立设计）
 - 同步 WMS 回调重试/幂等（demo 项目暂不需要）
 - `order-o11y` 模块的手动 OTel span（非此次修复目标）
+
+## 后续待办（防止遗忘）
+
+以下 BDD 缺口已识别但不在本次范围，记录在此避免丢失：
+
+| # | 主题 | 描述 | 建议时机 |
+|---|------|------|---------|
+| 1 | 多商品 + TMS 补偿 | `place_order_multi_item.feature` 扩展到 TMS 阶段：多商品下单后 WMS 回调 → TMS 拒绝，验证 inventory 释放了所有商品的预占 | 后续 sprint |
+| 2 | 可观测性 BDD | 验证 `o11y.server.requests`、`saga.step.duration` 等 Prometheus 指标在 BDD 场景后被记录 | Sprint 3（配合 v0.3.0-beta） |
+| 3 | 弹性模式补充 | Circuit breaker 状态机转换（open→half-open→closed）、重试机制、限流超时 | 后续 sprint |
 
 ## 文件变更汇总
 
@@ -316,8 +418,10 @@ BDD Test / WMS                     Controller                      Saga         
 | `WmsCallbackRequest.java` | 新增 | adapter/inbound/rest |
 | `OrderNotFoundException.java` | 新增 | adapter/inbound/rest |
 | `V3__add_order_items_column.sql` | 修改 | infrastructure/db |
+| `place_order_wms_callback.feature` | **新增** | bdd |
 | `TmsSteps.java` | 修改 | bdd |
 | `HttpHelper.java` | 修改 | bdd |
+| `WmsCallbackSteps.java` | 新增（可选，逻辑可放 TmsSteps） | bdd |
 | `OrderTest.java` | 修改 | domain-test |
 | `OrderPersistenceAdapterTest.java` | 修改 | adapter-test |
 | `WmsCallbackControllerTest.java` | 新增 | adapter-test |

@@ -125,13 +125,18 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
         List<InventoryReservation> reservations = reserveAllItems(command, orderId);
         InventoryReservation primaryReservation = reservations.get(0);
 
+        List<String> allReservationIds = reservations.stream()
+                .map(InventoryReservation::getReservationId)
+                .toList();
+
         Order order = new Order(orderId,
                 command.getCustomerId(),
                 command.getItems(),
                 OrderStatus.CREATED,
                 command.getIdempotencyKey(),
                 primaryReservation.getReservationId(),
-                Instant.now());
+                Instant.now(),
+                allReservationIds);
         orderRepository.save(order);
 
         // Cache the idempotency key after successful save

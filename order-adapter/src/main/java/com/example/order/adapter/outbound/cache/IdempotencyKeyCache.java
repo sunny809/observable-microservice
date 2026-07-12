@@ -58,4 +58,13 @@ public class IdempotencyKeyCache {
     public void invalidate(String key) {
         cache.invalidate(key);
     }
+
+    /**
+     * Removes all entries from the cache.
+     * Used for testing to ensure a clean state between scenarios.
+     */
+    public void clear() {
+        cache.invalidateAll();
+        cache.cleanUp();
+    }
 }

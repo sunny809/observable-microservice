@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,6 +33,7 @@ public class WmsCallbackController {
     }
 
     @PostMapping("/picking-completed")
+    @Transactional
     public ResponseEntity<Map<String, String>> onPickingCompleted(
             @Valid @RequestBody WmsCallbackRequest request) {
 

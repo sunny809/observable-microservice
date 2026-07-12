@@ -7,14 +7,14 @@ echo "=========================================="
 
 # Check prerequisites
 echo "Checking prerequisites..."
-command -v java >/dev/null 2>&1 || { echo "Java 21 is required but not installed. Aborting."; exit 1; }
+command -v java >/dev/null 2>&1 || { echo "Java 25 is required but not installed. Aborting."; exit 1; }
 command -v mvn >/dev/null 2>&1 || { echo "Maven 3.9+ is required but not installed. Aborting."; exit 1; }
 command -v docker >/dev/null 2>&1 || { echo "Docker is required but not installed. Aborting."; exit 1; }
 
 # Check Java version
 JAVA_VERSION=$(java -version 2>&1 | head -n 1 | cut -d '"' -f 2 | cut -d '.' -f 1)
-if [ "$JAVA_VERSION" != "21" ]; then
-    echo "Warning: Java 21 is recommended. Current version: $JAVA_VERSION"
+if [ "$JAVA_VERSION" != "25" ]; then
+    echo "Warning: Java 25 is recommended. Current version: $JAVA_VERSION"
 fi
 
 echo ""

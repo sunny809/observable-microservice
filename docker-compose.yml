@@ -76,6 +76,7 @@ services:
       - '3100:3100'
     volumes:
       - ./docker/loki/loki-config.yml:/etc/loki/loki-config.yml
+      - loki-data:/loki
     command:
       - '-config.file=/etc/loki/loki-config.yml'
     restart: unless-stopped
@@ -113,3 +114,4 @@ volumes:
   postgres-data:
   kafka-data:
   prometheus-data:
+  loki-data:

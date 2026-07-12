@@ -17,6 +17,7 @@ import com.example.order.application.port.out.DomainEventPublisher;
 import com.example.order.application.port.out.IdempotencyCachePort;
 import com.example.order.application.port.out.InventoryConfirmationScheduler;
 import com.example.order.application.port.out.InventoryPort;
+import com.example.order.application.port.out.MetricsPort;
 import com.example.order.application.port.out.OrderRepositoryPort;
 import com.example.order.application.port.out.ReservationRequest;
 import com.example.order.application.port.out.SagaLogPort;
@@ -75,6 +76,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
     private final InventoryConfirmationScheduler confirmationScheduler;
     private final TransactionTemplate transactionTemplate;
     private final IdempotencyCachePort idempotencyCache;
+    private final MetricsPort metricsPort;
 
     public OrderPlacementSaga(OrderRepositoryPort orderRepository,
                               InventoryPort inventoryPort,
@@ -84,7 +86,8 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                               TmsPort tmsPort,
                               InventoryConfirmationScheduler confirmationScheduler,
                               TransactionTemplate transactionTemplate,
-                              IdempotencyCachePort idempotencyCache) {
+                              IdempotencyCachePort idempotencyCache,
+                              MetricsPort metricsPort) {
         this.orderRepository = orderRepository;
         this.inventoryPort = inventoryPort;
         this.sagaLogPort = sagaLogPort;
@@ -94,6 +97,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
         this.confirmationScheduler = confirmationScheduler;
         this.transactionTemplate = transactionTemplate;
         this.idempotencyCache = idempotencyCache;
+        this.metricsPort = metricsPort;
     }
 
     /**
@@ -112,17 +116,29 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
     @Override
     @Transactional
     public OrderPlacedResult placeOrder(PlaceOrderCommand command) {
+        long start = System.nanoTime();
         // Fast path: cache hit means we already processed this key — throw immediately
         if (idempotencyCache.exists(command.getIdempotencyKey())) {
+            metricsPort.recordOrderFailed("DUPLICATE_ORDER");
+            metricsPort.recordSagaDuration(elapsedMillis(start), "duplicate");
             throw new DuplicateOrderException(command.getIdempotencyKey());
         }
         // Safety net: check DB in case cache expired or was evicted
         orderRepository.findByIdempotencyKey(command.getIdempotencyKey()).ifPresent(order -> {
+            metricsPort.recordOrderFailed("DUPLICATE_ORDER");
+            metricsPort.recordSagaDuration(elapsedMillis(start), "duplicate");
             throw new DuplicateOrderException(command.getIdempotencyKey());
         });
 
         String orderId = UUID.randomUUID().toString();
-        List<InventoryReservation> reservations = reserveAllItems(command, orderId);
+        List<InventoryReservation> reservations;
+        try {
+            reservations = reserveAllItems(command, orderId);
+        } catch (InsufficientInventoryException e) {
+            metricsPort.recordOrderFailed("INSUFFICIENT_INVENTORY");
+            metricsPort.recordSagaDuration(elapsedMillis(start), "compensation");
+            throw e;
+        }
         InventoryReservation primaryReservation = reservations.get(0);
 
         List<String> allReservationIds = reservations.stream()
@@ -149,6 +165,8 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                 new WmsShipmentInstruction(order.getOrderId(), primaryReservation.getReservationId()),
                 reservations));
 
+        metricsPort.recordOrderPlaced(order.getStatus().name());
+        metricsPort.recordSagaDuration(elapsedMillis(start), "success");
         return new OrderPlacedResult(order.getOrderId(), order.getStatus(), null);
     }
 
@@ -169,20 +187,26 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
     public void onWmsRequired(WmsInstructionRequiredEvent event) {
         InventoryReservation primaryReservation = event.getReservations().get(0);
         List<InventoryReservation> allReservations = event.getReservations();
+        // Idle gap between order transaction commit and this listener firing
+        metricsPort.recordSagaGap("POST_COMMIT_TO_WMS",
+                java.time.Duration.between(event.getEmittedAt(), Instant.now()).toMillis());
         confirmationScheduler.scheduleConfirmation(primaryReservation);
 
+        long stepStart = System.nanoTime();
         wmsPort.sendInstruction(event.getInstruction())
                 .thenCompose(ack -> {
                     if (ack.isAccepted()) {
                         return inventoryPort.confirm(new ConfirmReservationCommand(primaryReservation.getReservationId()))
                                 .thenRun(() -> transactionTemplate.executeWithoutResult(status -> {
                                     orderRepository.updateStatus(event.getOrderId(), OrderStatus.WMS_ACKED);
+                                    metricsPort.recordSagaStepDuration(SAGA_STEP_WMS_ACKED, elapsedMillis(stepStart), "success");
                                     sagaLogPort.recordStep(event.getOrderId(), SAGA_STEP_WMS_ACKED, String.format("WMS accepted instruction %s", ack.getMessageId()));
                                 }));
                     } else {
                         return releaseAllAsync(allReservations)
                                 .thenRun(() -> transactionTemplate.executeWithoutResult(status -> {
                                     orderRepository.updateStatus(event.getOrderId(), OrderStatus.REJECTED);
+                                    metricsPort.recordSagaStepDuration(SAGA_STEP_WMS_ACKED, elapsedMillis(stepStart), "rejected");
                                     sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(), String.format("WMS rejected: %s", ack.getMessageId()));
                                 }));
                     }
@@ -191,6 +215,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                     transactionTemplate.executeWithoutResult(status -> {
                         releaseAll(allReservations);
                         orderRepository.updateStatus(event.getOrderId(), OrderStatus.REJECTED);
+                        metricsPort.recordSagaStepDuration(SAGA_STEP_WMS_ACKED, elapsedMillis(stepStart), "failure");
                         sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(), String.format("WMS transport failed: %s", ex.getMessage()));
                     });
                     return null;
@@ -210,15 +235,21 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
         InventoryReservation primaryReservation = event.getReservations().get(0);
         List<InventoryReservation> allReservations = event.getReservations();
 
+        long stepStart = System.nanoTime();
         transactionTemplate.executeWithoutResult(status -> {
             orderRepository.updateStatus(event.getOrderId(), OrderStatus.WMS_PICKED);
+            metricsPort.recordSagaStepDuration(SAGA_STEP_WMS_PICKED, elapsedMillis(stepStart), "success");
             sagaLogPort.recordStep(event.getOrderId(), SAGA_STEP_WMS_PICKED,
                     String.format("WMS confirmed picking complete for reservation %s", primaryReservation.getReservationId()));
         });
 
-        eventPublisher.publish(new TmsInstructionRequiredEvent(event.getOrderId(),
-                new TmsShipmentInstruction(event.getOrderId(), primaryReservation.getReservationId()),
-                allReservations));
+        // Publish inside a transaction so that @TransactionalEventListener(AFTER_COMMIT)
+        // on onTmsRequired fires after the transaction commits.
+        transactionTemplate.executeWithoutResult(status -> {
+            eventPublisher.publish(new TmsInstructionRequiredEvent(event.getOrderId(),
+                    new TmsShipmentInstruction(event.getOrderId(), primaryReservation.getReservationId()),
+                    allReservations));
+        });
     }
 
     /**
@@ -239,12 +270,14 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
         InventoryReservation primaryReservation = event.getReservations().get(0);
         List<InventoryReservation> allReservations = event.getReservations();
 
+        long stepStart = System.nanoTime();
         tmsPort.sendInstruction(event.getInstruction())
                 .thenCompose(ack -> {
                     if (ack.isAccepted()) {
                         return CompletableFuture.completedFuture(null)
                                 .thenRun(() -> transactionTemplate.executeWithoutResult(status -> {
                             orderRepository.updateStatus(event.getOrderId(), OrderStatus.TMS_DISPATCHED);
+                            metricsPort.recordSagaStepDuration(SAGA_STEP_TMS_DISPATCHED, elapsedMillis(stepStart), "success");
                             sagaLogPort.recordStep(event.getOrderId(), SAGA_STEP_TMS_DISPATCHED,
                                     String.format("TMS accepted dispatch instruction %s", ack.getMessageId()));
                         }));
@@ -252,6 +285,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                         return releaseAllAsync(allReservations)
                                 .thenRun(() -> transactionTemplate.executeWithoutResult(status -> {
                                     orderRepository.updateStatus(event.getOrderId(), OrderStatus.TMS_REJECTED);
+                                    metricsPort.recordSagaStepDuration(SAGA_STEP_TMS_DISPATCHED, elapsedMillis(stepStart), "rejected");
                                     sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(),
                                             String.format("TMS rejected: %s", ack.getMessageId()));
                                 }));
@@ -261,6 +295,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                     transactionTemplate.executeWithoutResult(status -> {
                         releaseAll(allReservations);
                         orderRepository.updateStatus(event.getOrderId(), OrderStatus.TMS_REJECTED);
+                        metricsPort.recordSagaStepDuration(SAGA_STEP_TMS_DISPATCHED, elapsedMillis(stepStart), "failure");
                         sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(),
                                 String.format("TMS transport failed: %s", ex.getMessage()));
                     });
@@ -283,9 +318,11 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
             InventoryReservation reservation = inventoryPort.occupy(
                     new ReservationRequest(item.getSku(), item.getQuantity(), orderId)).join();
             if (reservation == null || reservation.getReservationId() == null) {
+                metricsPort.recordInventoryReservation(item.getSku(), false);
                 releaseAll(reservations);
                 throw new InsufficientInventoryException(item.getSku());
             }
+            metricsPort.recordInventoryReservation(item.getSku(), true);
             reservations.add(reservation);
         }
         return reservations;
@@ -320,5 +357,15 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                     }));
         }
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+    }
+
+    /**
+     * Converts a nanoTime delta to milliseconds.
+     *
+     * @param start the {@link System#nanoTime()} captured at the start of the timed span
+     * @return elapsed milliseconds since {@code start}
+     */
+    private static long elapsedMillis(long start) {
+        return java.time.Duration.ofNanos(System.nanoTime() - start).toMillis();
     }
 }

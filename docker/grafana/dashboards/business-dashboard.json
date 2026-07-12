@@ -200,7 +200,7 @@
       "targets": [
         {
           "expr": "rate(inventory_reservation_total[1m])",
-          "legendFormat": "{{status}}",
+          "legendFormat": "{{result}}",
           "refId": "A"
         }
       ],

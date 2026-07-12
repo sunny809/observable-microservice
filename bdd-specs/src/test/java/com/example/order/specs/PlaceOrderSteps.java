@@ -40,6 +40,11 @@ public class PlaceOrderSteps {
         inventoryMock.resetAll();
         wmsMock.resetAll();
         tmsMock.resetAll();
+        // Default stub for inventory confirm — called asynchronously by saga after WMS accepts.
+        // Must be persistent across scenarios because reactor may process the confirm call
+        // asynchronously after the current scenario's stubs have been cleared.
+        inventoryMock.stubFor(post(urlEqualTo("/api/inventory/confirm"))
+                .willReturn(aResponse().withStatus(200)));
     }
 
     @Given("inventory service returns reservation success")

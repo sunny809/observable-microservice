@@ -1,5 +1,6 @@
 package com.example.order.specs;
 
+import com.example.order.adapter.outbound.cache.IdempotencyKeyCache;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -13,6 +14,9 @@ public class CucumberHooks {
 
     @Autowired
     private CircuitBreakerRegistry circuitBreakerRegistry;
+
+    @Autowired
+    private IdempotencyKeyCache idempotencyKeyCache;
 
     @Before
     public void resetCircuitBreakersBefore() {
@@ -31,5 +35,10 @@ public class CucumberHooks {
     public void resetCircuitBreakersAfter() {
         circuitBreakerRegistry.getAllCircuitBreakers()
                 .forEach(cb -> cb.reset());
+    }
+
+    @After
+    public void clearIdempotencyCache() {
+        idempotencyKeyCache.clear();
     }
 }

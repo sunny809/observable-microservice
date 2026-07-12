@@ -39,6 +39,7 @@ class OrderPlacementSagaTest {
     private InventoryConfirmationScheduler confirmationScheduler;
     private TransactionTemplate transactionTemplate;
     private IdempotencyCachePort idempotencyCache;
+    private MetricsPort metricsPort;
     private OrderPlacementSaga saga;
 
     private TmsPort tmsPort;
@@ -66,8 +67,9 @@ class OrderPlacementSagaTest {
                     protected void doRollback(org.springframework.transaction.support.DefaultTransactionStatus s) {}
                 });
         idempotencyCache = mock(IdempotencyCachePort.class);
+        metricsPort = mock(MetricsPort.class);
         saga = new OrderPlacementSaga(orderRepository, inventoryPort, sagaLogPort,
-                eventPublisher, wmsPort, tmsPort, confirmationScheduler, transactionTemplate, idempotencyCache);
+                eventPublisher, wmsPort, tmsPort, confirmationScheduler, transactionTemplate, idempotencyCache, metricsPort);
     }
 
     private PlaceOrderCommand createCommand() {
@@ -97,6 +99,9 @@ class OrderPlacementSagaTest {
         verify(orderRepository).save(any(Order.class));
         verify(sagaLogPort).recordStep(anyString(), eq("ORDER_CREATED"), anyString());
         verify(eventPublisher).publish(any(WmsInstructionRequiredEvent.class));
+        verify(metricsPort).recordOrderPlaced("CREATED");
+        verify(metricsPort).recordSagaDuration(anyLong(), eq("success"));
+        verify(metricsPort).recordInventoryReservation(eq("SKU-1"), eq(true));
     }
 
     @Test
@@ -112,6 +117,9 @@ class OrderPlacementSagaTest {
 
         verify(inventoryPort, never()).occupy(any());
         verify(orderRepository, never()).save(any());
+        verify(metricsPort).recordOrderFailed("DUPLICATE_ORDER");
+        verify(metricsPort).recordSagaDuration(anyLong(), eq("duplicate"));
+        verify(metricsPort, never()).recordOrderPlaced(anyString());
     }
 
     @Test
@@ -126,6 +134,9 @@ class OrderPlacementSagaTest {
         verify(orderRepository, never()).findByIdempotencyKey(anyString());
         verify(inventoryPort, never()).occupy(any());
         verify(orderRepository, never()).save(any());
+        verify(metricsPort).recordOrderFailed("DUPLICATE_ORDER");
+        verify(metricsPort).recordSagaDuration(anyLong(), eq("duplicate"));
+        verify(metricsPort, never()).recordOrderPlaced(anyString());
     }
 
     @Test
@@ -141,6 +152,10 @@ class OrderPlacementSagaTest {
         assertTrue(ex.getMessage().contains("SKU-1"));
 
         verify(orderRepository, never()).save(any());
+        verify(metricsPort).recordInventoryReservation(eq("SKU-1"), eq(false));
+        verify(metricsPort).recordOrderFailed("INSUFFICIENT_INVENTORY");
+        verify(metricsPort).recordSagaDuration(anyLong(), eq("compensation"));
+        verify(metricsPort, never()).recordOrderPlaced(anyString());
     }
 
     @Test
@@ -166,6 +181,8 @@ class OrderPlacementSagaTest {
         verify(inventoryPort).confirm(any(ConfirmReservationCommand.class));
         verify(orderRepository).updateStatus(eq("ord-1"), eq(OrderStatus.WMS_ACKED));
         verify(sagaLogPort).recordStep(eq("ord-1"), eq("WMS_ACKED"), anyString());
+        verify(metricsPort).recordSagaGap(eq("POST_COMMIT_TO_WMS"), anyLong());
+        verify(metricsPort).recordSagaStepDuration(eq("WMS_ACKED"), anyLong(), eq("success"));
     }
 
     @Test
@@ -191,6 +208,8 @@ class OrderPlacementSagaTest {
         verify(inventoryPort).release("resv-123");
         verify(orderRepository).updateStatus(eq("ord-1"), eq(OrderStatus.REJECTED));
         verify(sagaLogPort).recordCompensation(eq("ord-1"), eq("resv-123"), anyString());
+        verify(metricsPort).recordSagaGap(eq("POST_COMMIT_TO_WMS"), anyLong());
+        verify(metricsPort).recordSagaStepDuration(eq("WMS_ACKED"), anyLong(), eq("rejected"));
     }
 
     @Test
@@ -217,6 +236,8 @@ class OrderPlacementSagaTest {
         verify(inventoryPort).release("resv-123");
         verify(orderRepository).updateStatus(eq("ord-1"), eq(OrderStatus.REJECTED));
         verify(sagaLogPort).recordCompensation(eq("ord-1"), eq("resv-123"), anyString());
+        verify(metricsPort).recordSagaGap(eq("POST_COMMIT_TO_WMS"), anyLong());
+        verify(metricsPort).recordSagaStepDuration(eq("WMS_ACKED"), anyLong(), eq("failure"));
     }
 
     @Test
@@ -233,11 +254,16 @@ class OrderPlacementSagaTest {
         when(wmsPort.sendInstruction(any(WmsShipmentInstruction.class)))
                 .thenReturn(CompletableFuture.completedFuture(new WmsAck(true, "ack-1")));
 
+        when(inventoryPort.confirm(any(ConfirmReservationCommand.class)))
+                .thenReturn(CompletableFuture.completedFuture(null));
+
         saga.onWmsRequired(event);
 
         assertTrue(latch.await(ASYNC_TIMEOUT_SECONDS, TimeUnit.SECONDS));
 
         verify(confirmationScheduler).scheduleConfirmation(reservation);
+        verify(metricsPort).recordSagaGap(eq("POST_COMMIT_TO_WMS"), anyLong());
+        verify(metricsPort).recordSagaStepDuration(eq("WMS_ACKED"), anyLong(), eq("success"));
     }
 
     @Test
@@ -263,6 +289,11 @@ class OrderPlacementSagaTest {
 
         verify(inventoryPort).release("resv-123");
         verify(orderRepository, never()).save(any());
+        verify(metricsPort).recordInventoryReservation(eq("SKU-1"), eq(true));
+        verify(metricsPort).recordInventoryReservation(eq("SKU-2"), eq(false));
+        verify(metricsPort).recordOrderFailed("INSUFFICIENT_INVENTORY");
+        verify(metricsPort).recordSagaDuration(anyLong(), eq("compensation"));
+        verify(metricsPort, never()).recordOrderPlaced(anyString());
     }
 
     @Test
@@ -274,8 +305,8 @@ class OrderPlacementSagaTest {
         doAnswer(invocation -> { latch.countDown(); return null; })
                 .when(sagaLogPort).recordCompensation(eq("ord-1"), eq("resv-123"), contains("Release failed"));
 
-        doThrow(new RuntimeException("release failed"))
-                .when(inventoryPort).release(anyString());
+        when(inventoryPort.release(anyString()))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("release failed")));
 
         WmsInstructionRequiredEvent event = new WmsInstructionRequiredEvent(
                 "ord-1", new WmsShipmentInstruction("ord-1", "resv-123"), reservation);
@@ -289,5 +320,7 @@ class OrderPlacementSagaTest {
 
         verify(sagaLogPort).recordCompensation(eq("ord-1"), eq("resv-123"),
                 contains("Release failed"));
+        verify(metricsPort).recordSagaGap(eq("POST_COMMIT_TO_WMS"), anyLong());
+        verify(metricsPort).recordSagaStepDuration(eq("WMS_ACKED"), anyLong(), eq("rejected"));
     }
 }

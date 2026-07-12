@@ -10,10 +10,10 @@ Feature: WMS picking callback
   Scenario: Callback succeeds when order is in WMS_ACKED
     When the client submits a place order request
     Then the sync response status should be 201
-    And the order status should eventually be WMS_ACKED
+    And the order status should eventually be "WMS_ACKED"
     When the WMS callback is called with the order ID
     Then the callback response status should be 200
-    And the order status should eventually be TMS_DISPATCHED
+    And the order status should eventually be "TMS_DISPATCHED"
 
   Scenario: Callback returns 404 for unknown order ID
     When the WMS callback is called with order ID "non-existent-id"

@@ -1,0 +1,105 @@
+<h2>📊 业务运营看板 — 面板布局</h2>
+<p class="subtitle">Order Service Business Dashboard — 实时订单运营状态</p>
+
+<div class="section">
+  <h3>顶部：KPI 摘要行</h3>
+  <div style="display:flex;gap:12px;margin:12px 0">
+    <div style="flex:1;border:1px solid #333;border-radius:8px;padding:12px;text-align:center;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa">总订单数</div>
+      <div style="font-size:22px;font-weight:bold;color:#4CAF50">1,234</div>
+      <div style="font-size:11px;color:#888">累计</div>
+    </div>
+    <div style="flex:1;border:1px solid #333;border-radius:8px;padding:12px;text-align:center;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa">成功率</div>
+      <div style="font-size:22px;font-weight:bold;color:#4CAF50">98.5%</div>
+      <div style="font-size:11px;color:#888">最近 1h</div>
+    </div>
+    <div style="flex:1;border:1px solid #333;border-radius:8px;padding:12px;text-align:center;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa">Saga P99</div>
+      <div style="font-size:22px;font-weight:bold;color:#FF9800">2.3s</div>
+      <div style="font-size:11px;color:#888">最近 1h</div>
+    </div>
+    <div style="flex:1;border:1px solid #333;border-radius:8px;padding:12px;text-align:center;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa">失败率</div>
+      <div style="font-size:22px;font-weight:bold;color:#F44336">1.5%</div>
+      <div style="font-size:11px;color:#888">最近 1h</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>中部：时序面板</h3>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <div style="flex:1;min-width:280px;border:1px solid #333;border-radius:8px;padding:12px;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa;margin-bottom:8px">📈 订单放置速率</div>
+      <div style="height:80px;display:flex;align-items:end;gap:4px">
+        <div style="flex:1;height:60%;background:linear-gradient(to top,#4CAF50,#81C784);border-radius:2px"></div>
+        <div style="flex:1;height:45%;background:linear-gradient(to top,#4CAF50,#81C784);border-radius:2px"></div>
+        <div style="flex:1;height:80%;background:linear-gradient(to top,#4CAF50,#81C784);border-radius:2px"></div>
+        <div style="flex:1;height:55%;background:linear-gradient(to top,#4CAF50,#81C784);border-radius:2px"></div>
+        <div style="flex:1;height:70%;background:linear-gradient(to top,#4CAF50,#81C784);border-radius:2px"></div>
+        <div style="flex:1;height:40%;background:linear-gradient(to top,#4CAF50,#81C784);border-radius:2px"></div>
+      </div>
+      <div style="font-size:10px;color:#888;margin-top:4px">rate(orders_placed_total[1m])</div>
+    </div>
+    <div style="flex:1;min-width:280px;border:1px solid #333;border-radius:8px;padding:12px;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa;margin-bottom:8px">❌ 失败分布</div>
+      <div style="height:80px;display:flex;align-items:end;gap:4px">
+        <div style="flex:1;height:30%;background:#F44336;border-radius:2px" title="INSUFFICIENT_INVENTORY"></div>
+        <div style="flex:1;height:10%;background:#FF9800;border-radius:2px" title="DUPLICATE"></div>
+        <div style="flex:1;height:20%;background:#9C27B0;border-radius:2px" title="REJECTED"></div>
+        <div style="flex:1;height:15%;background:#FF5722;border-radius:2px" title="TMS_REJECTED"></div>
+      </div>
+      <div style="font-size:10px;color:#888;margin-top:4px">红色:库存不足 橙色:重复 紫色:WMS拒 橙红:TMS拒</div>
+    </div>
+    <div style="flex:1;min-width:280px;border:1px solid #333;border-radius:8px;padding:12px;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa;margin-bottom:8px">⏱ Saga 各步骤耗时 (P50/P95/P99)</div>
+      <div style="height:80px;display:flex;align-items:end;gap:8px;padding:0 8px">
+        <div style="flex:1;display:flex;flex-direction:column-reverse;align-items:center">
+          <div style="width:20px;height:50%;background:#2196F3;border-radius:2px"></div>
+          <div style="width:20px;height:30%;background:#64B5F6;border-radius:2px;margin-top:2px"></div>
+          <div style="font-size:10px;color:#aaa;margin-top:4px">WMS_ACK</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column-reverse;align-items:center">
+          <div style="width:20px;height:35%;background:#4CAF50;border-radius:2px"></div>
+          <div style="width:20px;height:20%;background:#81C784;border-radius:2px;margin-top:2px"></div>
+          <div style="font-size:10px;color:#aaa;margin-top:4px">WMS_PICK</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column-reverse;align-items:center">
+          <div style="width:20px;height:65%;background:#FF9800;border-radius:2px"></div>
+          <div style="width:20px;height:40%;background:#FFB74D;border-radius:2px;margin-top:2px"></div>
+          <div style="font-size:10px;color:#aaa;margin-top:4px">TMS</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#888;margin-top:4px">saga_step_duration_seconds{step=~".*"}</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>底部：库存 + 间隔时间</h3>
+  <div style="display:flex;gap:12px">
+    <div style="flex:1;border:1px solid #333;border-radius:8px;padding:12px;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa;margin-bottom:8px">📦 库存预留 (成功/失败)</div>
+      <div style="height:60px;display:flex;align-items:end;gap:4px">
+        <div style="flex:1;height:70%;background:#4CAF50;border-radius:2px"></div>
+        <div style="flex:1;height:85%;background:#4CAF50;border-radius:2px"></div>
+        <div style="flex:1;height:5%;background:#F44336;border-radius:2px"></div>
+        <div style="flex:1;height:60%;background:#4CAF50;border-radius:2px"></div>
+      </div>
+      <div style="font-size:10px;color:#888;margin-top:4px">inventory_reservation_total{status="success|failure"}</div>
+    </div>
+    <div style="flex:1;border:1px solid #333;border-radius:8px;padding:12px;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa;margin-bottom:8px">⏳ POST_COMMIT_TO_WMS Gap</div>
+      <div style="height:60px;display:flex;align-items:end;gap:4px">
+        <div style="flex:1;height:40%;background:#9C27B0;border-radius:2px"></div>
+        <div style="flex:1;height:65%;background:#9C27B0;border-radius:2px"></div>
+        <div style="flex:1;height:30%;background:#9C27B0;border-radius:2px"></div>
+        <div style="flex:1;height:50%;background:#9C27B0;border-radius:2px"></div>
+      </div>
+      <div style="font-size:10px;color:#888;margin-top:4px">saga_gap_duration_seconds</div>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:24px;color:#aaa;font-size:13px">👉 这个布局是否符合你的预期？需要增减哪些面板？</p>

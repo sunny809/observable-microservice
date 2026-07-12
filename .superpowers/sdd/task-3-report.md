@@ -1,25 +1,33 @@
-# Task 3 Report: JPA Entity — add reservationIds column
+# Task 3: Grafana 数据源 Provisioning - Report
 
 **Status:** DONE
 
-**Summary:** All four files were already edited in the working tree to add the `reservation_ids` TEXT column for saga data.
+**Summary:** Created two Grafana provisioning config files for automatic datasource and dashboard configuration.
 
-## Details
+## What I implemented
 
-### Files modified
-- `order-adapter/src/main/java/com/example/order/adapter/outbound/persistence/OrderEntity.java` -- Added `reservationIds` field with `@Lob @Column(name = "reservation_ids", columnDefinition = "TEXT")`, getter, and setter
-- `order-adapter/src/main/java/com/example/order/adapter/outbound/persistence/OrderPersistenceAdapter.java` -- Updated `toEntity()` to serialize reservation IDs, updated `toDomain()` to deserialize and pass to `Order` constructor, added `serializeReservationIds()` and `deserializeReservationIds()` helper methods
-- `order-adapter/src/test/java/com/example/order/adapter/outbound/persistence/OrderPersistenceAdapterTest.java` -- Added three test methods: `testSaveSerializesReservationIds`, `testFindByIdDeserializesReservationIds`, `testFindByIdReturnsEmptyReservationIdsWhenNull`
-- `order-infrastructure/src/main/resources/db/migration/V3__add_order_items_column.sql` -- Appended `ALTER TABLE orders ADD COLUMN IF NOT EXISTS reservation_ids TEXT;`
+1. **docker/grafana/datasources/datasources.yml** - Defines two datasources:
+   - Prometheus (`http://prometheus:9090`, default, read-only)
+   - Loki (`http://loki:3100`, maxLines=1000, read-only)
 
-### Commits
-None -- changes were already applied to the working tree and match the task requirements exactly. No new commits were made.
+2. **docker/grafana/dashboards/dashboard.yml** - Defines a file-based dashboard provider:
+   - Name: "Order Service Dashboards", Folder: "Order Service"
+   - Scans `/etc/grafana/provisioning/dashboards` for JSON dashboard definitions
 
-### Test results
-Not run -- no `mvn` binary available in environment. All test code compiles correctly when verified by inspection against the existing patterns.
+## Verification
 
-### Observations
-- The existing `items` field pattern was followed exactly for the `reservationIds` field
-- The existing `objectMapper` serialization/deserialization pattern was followed exactly for the helpers
-- The three test methods from the brief are present and match the specifications precisely
-- The Flyway migration already had the `reservation_ids` column addition appended
+- Both YAML files parsed successfully with Python `yaml.safe_load()`
+- All field values match the task spec exactly
+
+## Files changed
+
+- `docker/grafana/datasources/datasources.yml` (created, 14 lines)
+- `docker/grafana/dashboards/dashboard.yml` (created, 14 lines)
+
+## Self-review findings
+
+None. Both files are straightforward YAML provisioning configs matching the specification.
+
+## Commit
+
+`b5f5442` feat(observability): add Grafana provisioning configs

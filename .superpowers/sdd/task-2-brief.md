@@ -1,60 +1,95 @@
-# Task 2: Saga — persist all reservation IDs on order placement
+### Task 2: Loki + Promtail 配置
 
 **Files:**
-- Modify: `order-application/src/main/java/com/example/order/application/service/OrderPlacementSaga.java`
-- Test: `order-application/src/test/java/com/example/order/application/service/OrderPlacementSagaTest.java`
+- Create: `docker/loki/loki-config.yml`
+- Create: `docker/loki/promtail-config.yml`
 
 **Interfaces:**
-- Consumes: `Order` 8-param constructor
-- Produces: Orders persisted with non-empty `allReservationIds`
+- Produces: Loki 本地存储配置 + Promtail 日志采集 pipeline
 
-## Tasks
+- [ ] **Step 1: 创建 Loki 配置**
 
-- [ ] **Step 1: Update `OrderPlacementSaga.placeOrder()`**
+```yaml
+# docker/loki/loki-config.yml
+auth_enabled: false
 
-Change the Order creation (around line 128-134):
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
 
-```java
-// Before:
-Order order = new Order(orderId,
-        command.getCustomerId(),
-        command.getItems(),
-        OrderStatus.CREATED,
-        command.getIdempotencyKey(),
-        primaryReservation.getReservationId(),
-        Instant.now());
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
 
-// After:
-List<String> allReservationIds = reservations.stream()
-        .map(InventoryReservation::getReservationId)
-        .toList();
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: boltdb-shipper
+      object_store: filesystem
+      schema: v11
+      index:
+        prefix: index_
+        period: 24h
 
-Order order = new Order(orderId,
-        command.getCustomerId(),
-        command.getItems(),
-        OrderStatus.CREATED,
-        command.getIdempotencyKey(),
-        primaryReservation.getReservationId(),
-        Instant.now(),
-        allReservationIds);
+limits_config:
+  retention_period: 168h  # 7 days
+  max_query_lookback: 168h
 ```
 
-- [ ] **Step 2: Run existing saga tests to verify**
+- [ ] **Step 2: 创建 Promtail 配置**
 
-Run: `mvn -pl order-application test -Dtest=OrderPlacementSagaTest -DfailIfNoTests=false`
-Expected: All pass
+```yaml
+# docker/loki/promtail-config.yml
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'log_stream'
+    pipeline_stages:
+      - json:
+          expressions:
+            level: level
+            traceId: traceId
+            service: service
+            orderId: orderId
+      - labels:
+          level:
+          service:
+      - timestamp:
+          source: '@timestamp'
+          format: RFC3339
+```
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add -A
-git commit -m "feat(saga): persist all reservation IDs on order creation"
+git add docker/loki/loki-config.yml docker/loki/promtail-config.yml
+git commit -m "feat(observability): add Loki + Promtail config"
 ```
 
-## Report Requirements
+---
 
-After completing the task, write a report containing:
-- Status: DONE or BLOCKED or NEEDS_CONTEXT
-- Commits made (list of commit hashes)
-- Test results summary (which tests passed, any failures)
-- Any concerns or observations

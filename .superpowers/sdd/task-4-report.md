@@ -1,24 +1,18 @@
-# Task 4 Report: WMS Callback Controller + DTO + Exception
+# Task 4: 业务运营看板 JSON — 完成报告
 
-**Status:** DONE
+## 实现内容
+- 创建了 Grafana 业务运营看板 JSON 文件 `docker/grafana/dashboards/business-dashboard.json`
+- 包含 9 个面板：
+  - **KPI 行** (Stat 面板): Total Orders, Success Rate, Saga P99 Duration, Failure Rate
+  - **时序面板**: Order Placement Rate, Failure Distribution, Saga Step Duration, Gap Duration, Inventory Reservation Rate
+- 配置了普罗米修斯数据源查询表达式与 Grafana 可视化配置
 
-**Summary:** All four files created — `WmsCallbackController.java`, `WmsCallbackRequest.java`, `OrderNotFoundException.java`, and `WmsCallbackControllerTest.java` — with exact code from the plan spec.
+## 验证结果
+- `python3 -m json.tool` — PASS (有效 JSON)
+- 尾随换行符 — CONFIRMED (符合 POSIX 规范)
 
-## Details
+## 变更文件
+- `docker/grafana/dashboards/business-dashboard.json` (新建, 215 行)
 
-### Files created
-- `order-adapter/src/main/java/.../adapter/inbound/rest/WmsCallbackController.java` — REST controller with `POST /picking-completed`, 404/409/200 handlers, `rebuildReservations()` helper
-- `order-adapter/src/main/java/.../adapter/inbound/rest/WmsCallbackRequest.java` — DTO with `@NotBlank orderId`
-- `order-adapter/src/main/java/.../adapter/inbound/rest/OrderNotFoundException.java` — extending RuntimeException
-- `order-adapter/src/test/java/.../adapter/inbound/rest/WmsCallbackControllerTest.java` — 4 test methods covering 200/404/409/reservation reconstruction
-
-### Commits
-None yet — pending commit.
-
-### Test results
-Not run — no mvn binary available. Code verified by inspection:
-- `WmsCallbackController` imports match the existing project patterns
-- Uses `OrderRepositoryPort.findById()` (same pattern as other adapters)
-- Uses `DomainEventPublisher.publish()` (same pattern as `OrderPlacementSaga`)
-- `WmsCallbackControllerTest` uses `@ExtendWith(MockitoExtension.class)` (standard project pattern)
-- All assertions use AssertJ `assertThat` (project standard)
+## 自审发现
+- 无重大问题。JSON 内容符合需求规格，包含正确的 Grafana schemaVersion (39)、uid 和时间范围设置。

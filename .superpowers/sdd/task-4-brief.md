@@ -1,265 +1,245 @@
-# Task 4: WMS callback controller + DTO + exception
+### Task 4: 业务运营看板 JSON
 
 **Files:**
-- Create: `order-adapter/src/main/java/com/example/order/adapter/inbound/rest/WmsCallbackController.java`
-- Create: `order-adapter/src/main/java/com/example/order/adapter/inbound/rest/WmsCallbackRequest.java`
-- Create: `order-adapter/src/main/java/com/example/order/adapter/inbound/rest/OrderNotFoundException.java`
-- Test: Create `order-adapter/src/test/java/com/example/order/adapter/inbound/rest/WmsCallbackControllerTest.java`
+- Create: `docker/grafana/dashboards/business-dashboard.json`
 
-**Interfaces:**
-- Consumes: `OrderRepositoryPort`, `DomainEventPublisher`
-- Produces: `POST /api/v1/orders/wms/callback/picking-completed` endpoint
-- Produces: `OrderNotFoundException` (extends RuntimeException, caught by global handler)
+**Panels:**
+1. KPI 行: 总订单数、成功率、Saga P99、失败率 (Stat 面板)
+2. 时序: 订单放置速率、失败分布、Saga 步骤耗时
+3. 详情: 库存预留、Saga Gap
 
-## Tasks
+- [ ] **Step 1: 创建业务看板 JSON**
 
-- [ ] **Step 1: Create `OrderNotFoundException.java`**
-
-```java
-package com.example.order.adapter.inbound.rest;
-
-public class OrderNotFoundException extends RuntimeException {
-    public OrderNotFoundException(String orderId) {
-        super("Order not found: " + orderId);
-    }
-}
-```
-
-- [ ] **Step 2: Create `WmsCallbackRequest.java`**
-
-```java
-package com.example.order.adapter.inbound.rest;
-
-import jakarta.validation.constraints.NotBlank;
-
-public class WmsCallbackRequest {
-    @NotBlank
-    private String orderId;
-
-    public String getOrderId() { return orderId; }
-    public void setOrderId(String orderId) { this.orderId = orderId; }
-}
-```
-
-- [ ] **Step 3: Create `WmsCallbackController.java`**
-
-```java
-package com.example.order.adapter.inbound.rest;
-
-import com.example.order.application.domain.InventoryReservation;
-import com.example.order.application.domain.Order;
-import com.example.order.application.domain.OrderStatus;
-import com.example.order.application.domain.WmsPickingCompletedEvent;
-import com.example.order.application.port.in.OrderItem;
-import com.example.order.application.port.out.DomainEventPublisher;
-import com.example.order.application.port.out.OrderRepositoryPort;
-import jakarta.validation.Valid;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-@RestController
-@RequestMapping("/api/v1/orders/wms/callback")
-public class WmsCallbackController {
-
-    private final OrderRepositoryPort orderRepository;
-    private final DomainEventPublisher eventPublisher;
-
-    public WmsCallbackController(OrderRepositoryPort orderRepository,
-                                  DomainEventPublisher eventPublisher) {
-        this.orderRepository = orderRepository;
-        this.eventPublisher = eventPublisher;
-    }
-
-    @PostMapping("/picking-completed")
-    public ResponseEntity<Map<String, String>> onPickingCompleted(
-            @Valid @RequestBody WmsCallbackRequest request) {
-
-        Order order = orderRepository.findById(request.getOrderId())
-                .orElseThrow(() -> new OrderNotFoundException(request.getOrderId()));
-
-        if (order.getStatus() != OrderStatus.WMS_ACKED) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                    "error", "invalid_order_status",
-                    "current", order.getStatus().name(),
-                    "expected", OrderStatus.WMS_ACKED.name()
-            ));
+```json
+{
+  "title": "Order Service — Business Dashboard",
+  "uid": "order-service-business",
+  "schemaVersion": 39,
+  "version": 1,
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Total Orders",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 3, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "orders_placed_total",
+          "legendFormat": "Total",
+          "refId": "A"
         }
-
-        List<InventoryReservation> reservations = rebuildReservations(order);
-
-        eventPublisher.publish(new WmsPickingCompletedEvent(
-                order.getOrderId(),
-                order.getReservationId(),
-                reservations));
-
-        return ResponseEntity.ok(Map.of("status", "accepted"));
-    }
-
-    private List<InventoryReservation> rebuildReservations(Order order) {
-        List<OrderItem> items = order.getItems();
-        List<String> reservationIds = order.getAllReservationIds();
-        List<InventoryReservation> reservations = new ArrayList<>();
-
-        for (int i = 0; i < items.size(); i++) {
-            OrderItem item = items.get(i);
-            String rid = i < reservationIds.size()
-                    ? reservationIds.get(i)
-                    : UUID.randomUUID().toString();
-            reservations.add(InventoryReservation.withId(
-                    rid, item.getSku(), item.getQuantity(), order.getOrderId()));
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "fixed"},
+          "thresholds": {"steps": [{"color": "green", "value": null}]}
         }
-        return reservations;
+      }
+    },
+    {
+      "id": 2,
+      "title": "Success Rate",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 3, "x": 3, "y": 0},
+      "targets": [
+        {
+          "expr": "1 - rate(orders_failed_total[1h]) / rate(orders_placed_total[1h])",
+          "legendFormat": "Success Rate",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "orange", "value": 0.95},
+              {"color": "green", "value": 0.99}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Saga P99 Duration",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 3, "x": 6, "y": 0},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(saga_duration_seconds_bucket[1h])) by (le))",
+          "legendFormat": "P99",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "orange", "value": 3},
+              {"color": "red", "value": 5}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Failure Rate",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 3, "x": 9, "y": 0},
+      "targets": [
+        {
+          "expr": "rate(orders_failed_total[1h])",
+          "legendFormat": "Failures",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "orange", "value": 0.01},
+              {"color": "red", "value": 0.05}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Order Placement Rate",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 4},
+      "targets": [
+        {
+          "expr": "rate(orders_placed_total[1m])",
+          "legendFormat": "orders/s",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Failure Distribution",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 4},
+      "targets": [
+        {
+          "expr": "rate(orders_failed_total[1m])",
+          "legendFormat": "{{reason}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Saga Step Duration",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 12},
+      "targets": [
+        {
+          "expr": "rate(saga_step_duration_seconds_sum[1m])",
+          "legendFormat": "{{step}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Gap Duration (POST_COMMIT_TO_WMS)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 12},
+      "targets": [
+        {
+          "expr": "saga_gap_duration_seconds",
+          "legendFormat": "gap",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Inventory Reservation Rate",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 20},
+      "targets": [
+        {
+          "expr": "rate(inventory_reservation_total[1m])",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cps",
+          "color": {"mode": "palette-classic"}
+        }
+      }
     }
+  ]
 }
 ```
 
-- [ ] **Step 4: Create `WmsCallbackControllerTest.java`**
+- [ ] **Step 2: 验证 JSON 格式**
 
-```java
-package com.example.order.adapter.inbound.rest;
+Run: `cat docker/grafana/dashboards/business-dashboard.json | python3 -m json.tool > /dev/null && echo "VALID JSON"`
 
-import com.example.order.application.domain.InventoryReservation;
-import com.example.order.application.domain.Order;
-import com.example.order.application.domain.OrderStatus;
-import com.example.order.application.domain.WmsPickingCompletedEvent;
-import com.example.order.application.port.in.OrderItem;
-import com.example.order.application.port.out.DomainEventPublisher;
-import com.example.order.application.port.out.OrderRepositoryPort;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+Expected: `VALID JSON`
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
-@ExtendWith(MockitoExtension.class)
-class WmsCallbackControllerTest {
-
-    @Mock
-    private OrderRepositoryPort orderRepository;
-    @Mock
-    private DomainEventPublisher eventPublisher;
-
-    private WmsCallbackController controller;
-
-    @BeforeEach
-    void setUp() {
-        controller = new WmsCallbackController(orderRepository, eventPublisher);
-    }
-
-    @Test
-    void shouldReturn200AndPublishEventWhenOrderIsWmsAcked() {
-        Order order = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 2)),
-                OrderStatus.WMS_ACKED, "idem-1", "resv-1", Instant.now(),
-                List.of("resv-1"));
-        when(orderRepository.findById("ord-1")).thenReturn(Optional.of(order));
-
-        WmsCallbackRequest request = new WmsCallbackRequest();
-        request.setOrderId("ord-1");
-
-        ResponseEntity<Map<String, String>> response = controller.onPickingCompleted(request);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).containsEntry("status", "accepted");
-
-        ArgumentCaptor<WmsPickingCompletedEvent> captor =
-                ArgumentCaptor.forClass(WmsPickingCompletedEvent.class);
-        verify(eventPublisher).publish(captor.capture());
-        assertThat(captor.getValue().getOrderId()).isEqualTo("ord-1");
-    }
-
-    @Test
-    void shouldReturn404WhenOrderNotFound() {
-        when(orderRepository.findById("non-existent")).thenReturn(Optional.empty());
-
-        WmsCallbackRequest request = new WmsCallbackRequest();
-        request.setOrderId("non-existent");
-
-        assertThatThrownBy(() -> controller.onPickingCompleted(request))
-                .isInstanceOf(OrderNotFoundException.class)
-                .hasMessageContaining("non-existent");
-
-        verifyNoInteractions(eventPublisher);
-    }
-
-    @Test
-    void shouldReturn409WhenOrderIsNotWmsAcked() {
-        Order order = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 2)),
-                OrderStatus.CREATED, "idem-1", "resv-1", Instant.now());
-        when(orderRepository.findById("ord-1")).thenReturn(Optional.of(order));
-
-        WmsCallbackRequest request = new WmsCallbackRequest();
-        request.setOrderId("ord-1");
-
-        ResponseEntity<Map<String, String>> response = controller.onPickingCompleted(request);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-        assertThat(response.getBody()).containsEntry("error", "invalid_order_status");
-        assertThat(response.getBody()).containsEntry("current", "CREATED");
-        verifyNoInteractions(eventPublisher);
-    }
-
-    @Test
-    void shouldRebuildReservationsWithAllReservationIds() {
-        Order order = new Order("ord-1", "cust-1",
-                List.of(new OrderItem("SKU-1", 2), new OrderItem("SKU-2", 3)),
-                OrderStatus.WMS_ACKED, "idem-1", "resv-1", Instant.now(),
-                List.of("resv-1", "resv-2"));
-        when(orderRepository.findById("ord-1")).thenReturn(Optional.of(order));
-
-        WmsCallbackRequest request = new WmsCallbackRequest();
-        request.setOrderId("ord-1");
-
-        controller.onPickingCompleted(request);
-
-        ArgumentCaptor<WmsPickingCompletedEvent> captor =
-                ArgumentCaptor.forClass(WmsPickingCompletedEvent.class);
-        verify(eventPublisher).publish(captor.capture());
-
-        List<InventoryReservation> reservations = captor.getValue().getReservations();
-        assertThat(reservations).hasSize(2);
-        assertThat(reservations.get(0).getReservationId()).isEqualTo("resv-1");
-        assertThat(reservations.get(1).getReservationId()).isEqualTo("resv-2");
-        assertThat(reservations.get(0).getSku()).isEqualTo("SKU-1");
-        assertThat(reservations.get(1).getSku()).isEqualTo("SKU-2");
-    }
-}
-```
-
-- [ ] **Step 5: Run tests**
-
-Run: `mvn -pl order-adapter test -Dtest=WmsCallbackControllerTest -DfailIfNoTests=false`
-Expected: All pass
-
-- [ ] **Step 6: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
-git add -A
-git commit -m "feat(api): add WMS picking callback endpoint"
+git add docker/grafana/dashboards/business-dashboard.json
+git commit -m "feat(observability): add business dashboard JSON"
 ```
 
-## Report Requirements
+---
 
-After completing the task, write a report containing:
-- Status: DONE or BLOCKED or NEEDS_CONTEXT
-- Commits made (list of commit hashes)
-- Test results summary (which tests passed, any failures)
-- Any concerns or observations

@@ -1,134 +1,45 @@
-# Task 1: Domain model — Order.allReservationIds + InventoryReservation.withId()
+### Task 1: Prometheus 抓取配置
 
 **Files:**
-- Modify: `order-application/src/main/java/com/example/order/application/domain/Order.java`
-- Modify: `order-application/src/main/java/com/example/order/application/domain/InventoryReservation.java`
-- Test: `order-application/src/test/java/com/example/order/application/domain/OrderTest.java`
+- Create: `docker/prometheus/prometheus.yml`
+- Test: `docker compose config` 验证
 
 **Interfaces:**
-- Consumes: (nothing — new domain field only)
-- Produces: `Order.allReservationIds` field + `getAllReservationIds()` getter; `InventoryReservation.withId()` factory
+- Produces: Prometheus 配置文件，定义 scrape targets
 
-## Tasks
+- [ ] **Step 1: 创建 Prometheus 配置**
 
-- [ ] **Step 1: Write failing test for `allReservationIds` in OrderTest**
+```yaml
+# docker/prometheus/prometheus.yml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
 
-Add to the end of `OrderTest.java`:
+scrape_configs:
+  - job_name: 'order-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['order-demo:8080']
+        labels:
+          application: 'order-service'
 
-```java
-// === allReservationIds tests ===
-
-@Test
-void testAllReservationIdsStoredAndReturned() {
-    List<String> expectedIds = List.of("resv-1", "resv-2");
-    Order order = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 2), new OrderItem("SKU-2", 3)),
-            OrderStatus.CREATED, "idem-1", "resv-1", Instant.now(), expectedIds);
-    assertEquals(expectedIds, order.getAllReservationIds());
-}
-
-@Test
-void testAllReservationIdsIsEmptyListWhenNotProvided() {
-    Order order = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 2)),
-            OrderStatus.CREATED, "idem-1", "resv-1", Instant.now());
-    assertTrue(order.getAllReservationIds().isEmpty());
-}
-
-@Test
-void testAllReservationIdsIsImmutable() {
-    List<String> ids = new ArrayList<>(List.of("resv-1"));
-    Order order = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 2)),
-            OrderStatus.CREATED, "idem-1", "resv-1", Instant.now(), ids);
-    ids.add("resv-2"); // modify original
-    assertEquals(1, order.getAllReservationIds().size());
-}
-
-@Test
-void testAllReservationIdsRejectsNull() {
-    Order order = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 2)),
-            OrderStatus.CREATED, "idem-1", "resv-1", Instant.now(), null);
-    assertTrue(order.getAllReservationIds().isEmpty());
-}
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 2: 验证配置**
 
-Run: `mvn -pl order-application test -Dtest=OrderTest -DfailIfNoTests=false`
-Expected: Compilation fails on `Order` — no 8-param constructor
+Run: `docker run --rm -v $(pwd)/docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus:latest --config.file=/etc/prometheus/prometheus.yml --dry-run 2>&1 | head -20`
 
-- [ ] **Step 3: Add `allReservationIds` field to `Order.java`**
+Expected: 无错误输出，配置加载成功
 
-Add field, 8-param constructor, delegate 7-param to 8-param:
-
-```java
-// New field after createdAt
-private final List<String> allReservationIds;
-
-// New 8-param constructor — the canonical one
-public Order(String orderId, String customerId, List<OrderItem> items,
-             OrderStatus status, String idempotencyKey, String reservationId,
-             Instant createdAt, List<String> allReservationIds) {
-    this.orderId = Objects.requireNonNull(orderId);
-    this.customerId = Objects.requireNonNull(customerId);
-    this.items = Collections.unmodifiableList(Objects.requireNonNull(items));
-    this.status = Objects.requireNonNull(status);
-    this.idempotencyKey = Objects.requireNonNull(idempotencyKey);
-    this.reservationId = reservationId;
-    this.createdAt = Objects.requireNonNull(createdAt);
-    this.allReservationIds = allReservationIds != null
-            ? List.copyOf(allReservationIds) : List.of();
-}
-
-// Updated 7-param constructor — delegates with empty list
-public Order(String orderId, String customerId, List<OrderItem> items,
-             OrderStatus status, String idempotencyKey, String reservationId,
-             Instant createdAt) {
-    this(orderId, customerId, items, status, idempotencyKey, reservationId,
-         createdAt, List.of());
-}
-
-// New getter
-public List<String> getAllReservationIds() {
-    return allReservationIds;
-}
-```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `mvn -pl order-application test -Dtest=OrderTest -DfailIfNoTests=false`
-Expected: All OrderTest tests pass (including all the existing ones)
-
-- [ ] **Step 5: Add `withId()` factory to `InventoryReservation.java`**
-
-Add after the `pending()` method:
-
-```java
-/**
- * Creates a reservation with a specific reservation ID.
- * Used for reconstructing reservations from persisted data (e.g., WMS callback).
- */
-public static InventoryReservation withId(String reservationId, String sku,
-                                          int quantity, String orderId) {
-    return new InventoryReservation(reservationId, sku, quantity, orderId,
-            ReservationStatus.PENDING, Instant.now(), null);
-}
-```
-
-- [ ] **Step 6: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
-git add -A
-git commit -m "feat(domain): add Order.allReservationIds and InventoryReservation.withId()
-
-- Add 8-param Order constructor with allReservationIds list
-- 7-param constructor delegates to 8-param with empty list (backward compat)
-- Add InventoryReservation.withId() factory for persisted-data reconstruction
-- allReservationIds is immutable and null-safe"
+git add docker/prometheus/prometheus.yml
+git commit -m "feat(observability): add Prometheus scrape config"
 ```
 
-## Report Requirements
+---
 
-After completing the task, write a report containing:
-- Status: DONE or BLOCKED or NEEDS_CONTEXT
-- Commits made (list of commit hashes)
-- Test results summary (which tests passed, any failures)
-- Any concerns or observations

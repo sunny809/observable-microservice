@@ -1,0 +1,110 @@
+<h2>🔧 技术 Infrastructure 看板 — 面板布局</h2>
+<p class="subtitle">Order Service Technical Dashboard — 运维健康状态</p>
+
+<div class="section">
+  <h3>行 1：JVM 健康</h3>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px;border:1px solid #333;border-radius:8px;padding:12px;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa">🧠 Heap Usage</div>
+      <div style="height:30px;background:#333;border-radius:4px;margin:8px 0;overflow:hidden">
+        <div style="width:62%;height:100%;background:linear-gradient(90deg,#4CAF50,#FF9800);border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;color:#fff">256 MB / 512 MB</div>
+      </div>
+      <div style="font-size:10px;color:#888">jvm_memory_used_bytes{area="heap"}</div>
+    </div>
+    <div style="flex:1;min-width:200px;border:1px solid #333;border-radius:8px;padding:12px;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa">🔄 GC Pause</div>
+      <div style="height:40px;display:flex;align-items:end;gap:4px">
+        <div style="flex:1;height:30%;background:#FF9800;border-radius:2px"></div>
+        <div style="flex:1;height:55%;background:#FF9800;border-radius:2px"></div>
+        <div style="flex:1;height:20%;background:#4CAF50;border-radius:2px"></div>
+        <div style="flex:1;height:70%;background:#FF9800;border-radius:2px"></div>
+      </div>
+      <div style="font-size:10px;color:#888">jvm_gc_pause_seconds_sum</div>
+    </div>
+    <div style="flex:1;min-width:200px;border:1px solid #333;border-radius:8px;padding:12px;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa">🧵 Thread States</div>
+      <div style="font-size:12px;line-height:1.6">
+        <span style="color:#4CAF50">● RUNNABLE 12</span>
+        <span style="color:#2196F3">● TIMED_WAIT 8</span>
+        <span style="color:#FF9800">● BLOCKED 0</span>
+      </div>
+      <div style="font-size:10px;color:#888;margin-top:4px">jvm_threads_state</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>行 2：数据库 + 连接池</h3>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <div style="flex:1;min-width:280px;border:1px solid #333;border-radius:8px;padding:12px;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa;margin-bottom:8px">🗄️ HikariCP 连接池</div>
+      <div style="height:30px;background:#333;border-radius:4px;margin:8px 0;overflow:hidden">
+        <div style="width:40%;height:100%;background:#4CAF50;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;color:#fff">Active: 10</div>
+        <div style="width:20%;height:100%;background:#2196F3;border-radius:4px;margin-top:-30px;margin-left:40%;display:flex;align-items:center;padding-left:8px;font-size:11px;color:#fff">Idle: 5</div>
+      </div>
+      <div style="font-size:10px;color:#888">hikaricp_connections_active / hikaricp_connections_idle / hikaricp_connections_pending</div>
+    </div>
+    <div style="flex:1;min-width:280px;border:1px solid #333;border-radius:8px;padding:12px;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa;margin-bottom:8px">🐌 慢查询</div>
+      <div style="height:40px;display:flex;align-items:end;gap:4px">
+        <div style="flex:1;height:10%;background:#4CAF50;border-radius:2px"></div>
+        <div style="flex:1;height:5%;background:#4CAF50;border-radius:2px"></div>
+        <div style="flex:1;height:25%;background:#FF9800;border-radius:2px"></div>
+        <div style="flex:1;height:15%;background:#4CAF50;border-radius:2px"></div>
+      </div>
+      <div style="font-size:10px;color:#888">spring_data_repository_requests > 1s</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>行 3：HTTP + Resilience4j</h3>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px;border:1px solid #333;border-radius:8px;padding:12px;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa;margin-bottom:8px">🌐 接口延迟 (P50/P95/P99)</div>
+      <div style="display:flex;gap:12px;justify-content:center">
+        <div style="text-align:center">
+          <div style="font-size:18px;font-weight:bold;color:#4CAF50">45ms</div>
+          <div style="font-size:10px;color:#888">P50</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:18px;font-weight:bold;color:#FF9800">120ms</div>
+          <div style="font-size:10px;color:#888">P95</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:18px;font-weight:bold;color:#F44336">350ms</div>
+          <div style="font-size:10px;color:#888">P99</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#888;margin-top:4px">http_server_requests_seconds</div>
+    </div>
+    <div style="flex:1;min-width:200px;border:1px solid #333;border-radius:8px;padding:12px;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa;margin-bottom:8px">⛑️ Circuit Breaker 状态</div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <div style="text-align:center;padding:8px 12px;background:#1a3a1a;border-radius:6px">
+          <div style="font-size:14px;font-weight:bold;color:#4CAF50">CLOSED</div>
+          <div style="font-size:10px;color:#aaa">Inventory</div>
+        </div>
+        <div style="text-align:center;padding:8px 12px;background:#1a3a1a;border-radius:6px">
+          <div style="font-size:14px;font-weight:bold;color:#4CAF50">CLOSED</div>
+          <div style="font-size:10px;color:#aaa">WMS</div>
+        </div>
+        <div style="text-align:center;padding:8px 12px;background:#1a3a1a;border-radius:6px">
+          <div style="font-size:14px;font-weight:bold;color:#4CAF50">CLOSED</div>
+          <div style="font-size:10px;color:#aaa">TMS</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#888;margin-top:4px">resilience4j_circuitbreaker_state</div>
+    </div>
+    <div style="flex:1;min-width:200px;border:1px solid #333;border-radius:8px;padding:12px;background:#1a1a2e">
+      <div style="font-size:11px;color:#aaa;margin-bottom:8px">🔄 重试 / 限流</div>
+      <div style="font-size:12px;line-height:1.6">
+        <div><span style="color:#FF9800">⟳ 重试次数:</span> 3/min</div>
+        <div><span style="color:#2196F3">⏱ 限流拒绝:</span> 0/min</div>
+      </div>
+      <div style="font-size:10px;color:#888;margin-top:4px">resilience4j_retry_calls / resilience4j_ratelimiter_calls</div>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:24px;color:#aaa;font-size:13px">👉 技术看板布局是否符合预期？需要增减什么？</p>

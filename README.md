@@ -121,6 +121,28 @@ curl -X POST http://localhost:8080/api/v1/orders \
 
 ## Observability Stack
 
+The project provides a complete local observability stack via docker-compose, started with a single command:
+
+```bash
+docker compose up -d
+```
+
+| Component   | URL                              | Description                     |
+|-------------|----------------------------------|---------------------------------|
+| **Grafana** | http://localhost:3000            | Dashboards (admin/admin)        |
+| **Prometheus** | http://localhost:9090         | Metric storage                  |
+| **Loki**    | http://localhost:3100            | Log aggregation                 |
+| **Jaeger**  | http://localhost:16686           | Distributed tracing             |
+
+### Pre-configured Dashboards
+
+- **Business Dashboard** — Order volume, success rate, saga duration, failure distribution, inventory reservations
+- **Technical Dashboard** — JVM, DB connection pool, HTTP latency, circuit breaker status
+
+> Note: Pre-existing Grafana and Prometheus components are already configured, but business metrics require sending order requests first to populate the dashboards.
+>
+> See [Verification Guide](docs/observability-verify.md) for step-by-step checks.
+
 ### Metrics (Prometheus)
 
 The application exposes two tiers of metrics:

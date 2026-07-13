@@ -54,6 +54,14 @@ app:
       topic: wms.shipment.instructions
   inventory:
     confirmation-delay-seconds: 60
+  saga:
+    timeout:
+      check-interval: 60s
+      default-timeout: 300s
+      step-timeouts:
+        ORDER_CREATED: 60s
+        WMS_ACKED: 180s
+        WMS_PICKED: 120s
 
 management:
   endpoints:

@@ -44,6 +44,8 @@ class OrderPlacementSagaTest {
 
     private TmsPort tmsPort;
 
+    private CompensationLogPort compensationLogPort;
+
     @BeforeEach
     void setUp() {
         orderRepository = mock(OrderRepositoryPort.class);
@@ -68,8 +70,9 @@ class OrderPlacementSagaTest {
                 });
         idempotencyCache = mock(IdempotencyCachePort.class);
         metricsPort = mock(MetricsPort.class);
+        compensationLogPort = mock(CompensationLogPort.class);
         saga = new OrderPlacementSaga(orderRepository, inventoryPort, sagaLogPort,
-                eventPublisher, wmsPort, tmsPort, confirmationScheduler, transactionTemplate, idempotencyCache, metricsPort);
+                eventPublisher, wmsPort, tmsPort, confirmationScheduler, transactionTemplate, idempotencyCache, metricsPort, compensationLogPort);
     }
 
     private PlaceOrderCommand createCommand() {
@@ -322,5 +325,24 @@ class OrderPlacementSagaTest {
                 contains("Release failed"));
         verify(metricsPort).recordSagaGap(eq("POST_COMMIT_TO_WMS"), anyLong());
         verify(metricsPort).recordSagaStepDuration(eq("WMS_ACKED"), anyLong(), eq("rejected"));
+    }
+
+    @Test
+    @DisplayName("should skip already compensated reservations")
+    void testSkipAlreadyCompensatedReservations() {
+        InventoryReservation reservation = new InventoryReservation("resv-1", "SKU-1", 2, "order-1",
+                ReservationStatus.PENDING, Instant.now(), null);
+        when(compensationLogPort.exists("compensate:order-1:WMS_ACKED:resv-1")).thenReturn(true);
+
+        WmsInstructionRequiredEvent event = new WmsInstructionRequiredEvent(
+                "order-1", new WmsShipmentInstruction("order-1", "resv-1"), reservation);
+
+        when(wmsPort.sendInstruction(any(WmsShipmentInstruction.class)))
+                .thenReturn(CompletableFuture.completedFuture(new WmsAck(false, "reject-1")));
+
+        saga.onWmsRequired(event);
+
+        verify(inventoryPort, never()).release(anyString());
+        verify(sagaLogPort).recordCompensation("order-1", "resv-1", "Skip: already compensated");
     }
 }

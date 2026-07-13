@@ -12,6 +12,8 @@ import com.example.order.application.port.in.OrderItem;
 import com.example.order.application.port.in.OrderPlacedResult;
 import com.example.order.application.port.in.PlaceOrderCommand;
 import com.example.order.application.port.in.PlaceOrderUseCase;
+import com.example.order.application.port.out.CompensationLogPort;
+import com.example.order.application.port.out.CompensationStatus;
 import com.example.order.application.port.out.ConfirmReservationCommand;
 import com.example.order.application.port.out.DomainEventPublisher;
 import com.example.order.application.port.out.IdempotencyCachePort;
@@ -77,6 +79,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
     private final TransactionTemplate transactionTemplate;
     private final IdempotencyCachePort idempotencyCache;
     private final MetricsPort metricsPort;
+    private final CompensationLogPort compensationLogPort;
 
     public OrderPlacementSaga(OrderRepositoryPort orderRepository,
                               InventoryPort inventoryPort,
@@ -87,7 +90,8 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                               InventoryConfirmationScheduler confirmationScheduler,
                               TransactionTemplate transactionTemplate,
                               IdempotencyCachePort idempotencyCache,
-                              MetricsPort metricsPort) {
+                              MetricsPort metricsPort,
+                              CompensationLogPort compensationLogPort) {
         this.orderRepository = orderRepository;
         this.inventoryPort = inventoryPort;
         this.sagaLogPort = sagaLogPort;
@@ -98,6 +102,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
         this.transactionTemplate = transactionTemplate;
         this.idempotencyCache = idempotencyCache;
         this.metricsPort = metricsPort;
+        this.compensationLogPort = compensationLogPort;
     }
 
     /**
@@ -203,7 +208,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                                     sagaLogPort.recordStep(event.getOrderId(), SAGA_STEP_WMS_ACKED, String.format("WMS accepted instruction %s", ack.getMessageId()));
                                 }));
                     } else {
-                        return releaseAllAsync(allReservations)
+                        return releaseAllAsync(allReservations, SAGA_STEP_WMS_ACKED)
                                 .thenRun(() -> transactionTemplate.executeWithoutResult(status -> {
                                     orderRepository.updateStatus(event.getOrderId(), OrderStatus.REJECTED);
                                     metricsPort.recordSagaStepDuration(SAGA_STEP_WMS_ACKED, elapsedMillis(stepStart), "rejected");
@@ -213,7 +218,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                 })
                 .exceptionally(ex -> {
                     transactionTemplate.executeWithoutResult(status -> {
-                        releaseAll(allReservations);
+                        releaseAll(allReservations, SAGA_STEP_WMS_ACKED);
                         orderRepository.updateStatus(event.getOrderId(), OrderStatus.REJECTED);
                         metricsPort.recordSagaStepDuration(SAGA_STEP_WMS_ACKED, elapsedMillis(stepStart), "failure");
                         sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(), String.format("WMS transport failed: %s", ex.getMessage()));
@@ -282,7 +287,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                                     String.format("TMS accepted dispatch instruction %s", ack.getMessageId()));
                         }));
                     } else {
-                        return releaseAllAsync(allReservations)
+                        return releaseAllAsync(allReservations, SAGA_STEP_TMS_DISPATCHED)
                                 .thenRun(() -> transactionTemplate.executeWithoutResult(status -> {
                                     orderRepository.updateStatus(event.getOrderId(), OrderStatus.TMS_REJECTED);
                                     metricsPort.recordSagaStepDuration(SAGA_STEP_TMS_DISPATCHED, elapsedMillis(stepStart), "rejected");
@@ -293,7 +298,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                 })
                 .exceptionally(ex -> {
                     transactionTemplate.executeWithoutResult(status -> {
-                        releaseAll(allReservations);
+                        releaseAll(allReservations, SAGA_STEP_TMS_DISPATCHED);
                         orderRepository.updateStatus(event.getOrderId(), OrderStatus.TMS_REJECTED);
                         metricsPort.recordSagaStepDuration(SAGA_STEP_TMS_DISPATCHED, elapsedMillis(stepStart), "failure");
                         sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(),
@@ -319,7 +324,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                     new ReservationRequest(item.getSku(), item.getQuantity(), orderId)).join();
             if (reservation == null || reservation.getReservationId() == null) {
                 metricsPort.recordInventoryReservation(item.getSku(), false);
-                releaseAll(reservations);
+                releaseAll(reservations, SAGA_STEP_ORDER_CREATED);
                 throw new InsufficientInventoryException(item.getSku());
             }
             metricsPort.recordInventoryReservation(item.getSku(), true);
@@ -335,26 +340,52 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
      *
      * @param reservations the list of reservations to release
      */
-    private void releaseAll(List<InventoryReservation> reservations) {
+    private void releaseAll(List<InventoryReservation> reservations, String stepName) {
         for (InventoryReservation r : reservations) {
+            String idempotencyKey = compensationIdempotencyKey(r.getOrderId(), stepName, r.getReservationId());
+
+            if (compensationLogPort.exists(idempotencyKey)) {
+                sagaLogPort.recordCompensation(r.getOrderId(), r.getReservationId(),
+                    "Skip: already compensated");
+                continue;
+            }
+
             try {
                 inventoryPort.release(r.getReservationId()).join();
+                compensationLogPort.save(idempotencyKey, r.getOrderId(), stepName,
+                    r.getReservationId(), CompensationStatus.COMPLETED, null);
             } catch (Exception e) {
+                compensationLogPort.save(idempotencyKey, r.getOrderId(), stepName,
+                    r.getReservationId(), CompensationStatus.FAILED, e.getMessage());
                 sagaLogPort.recordCompensation(r.getOrderId(), r.getReservationId(),
-                        "Release failed during compensation: " + e.getMessage());
+                    "Release failed during compensation: " + e.getMessage());
             }
         }
     }
 
-    private CompletableFuture<Void> releaseAllAsync(List<InventoryReservation> reservations) {
+    private CompletableFuture<Void> releaseAllAsync(List<InventoryReservation> reservations, String stepName) {
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (InventoryReservation r : reservations) {
+            String idempotencyKey = compensationIdempotencyKey(r.getOrderId(), stepName, r.getReservationId());
+
+            if (compensationLogPort.exists(idempotencyKey)) {
+                sagaLogPort.recordCompensation(r.getOrderId(), r.getReservationId(),
+                    "Skip: already compensated");
+                continue;
+            }
+
             futures.add(inventoryPort.release(r.getReservationId())
-                    .exceptionally(ex -> {
-                        sagaLogPort.recordCompensation(r.getOrderId(), r.getReservationId(),
-                                "Release failed during compensation: " + ex.getMessage());
-                        return null;
-                    }));
+                .thenRun(() -> {
+                    compensationLogPort.save(idempotencyKey, r.getOrderId(), stepName,
+                        r.getReservationId(), CompensationStatus.COMPLETED, null);
+                })
+                .exceptionally(ex -> {
+                    compensationLogPort.save(idempotencyKey, r.getOrderId(), stepName,
+                        r.getReservationId(), CompensationStatus.FAILED, ex.getMessage());
+                    sagaLogPort.recordCompensation(r.getOrderId(), r.getReservationId(),
+                        "Release failed during compensation: " + ex.getMessage());
+                    return null;
+                }));
         }
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
@@ -367,5 +398,9 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
      */
     private static long elapsedMillis(long start) {
         return java.time.Duration.ofNanos(System.nanoTime() - start).toMillis();
+    }
+
+    private String compensationIdempotencyKey(String orderId, String stepName, String reservationId) {
+        return String.format("compensate:%s:%s:%s", orderId, stepName, reservationId);
     }
 }

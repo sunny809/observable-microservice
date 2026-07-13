@@ -105,3 +105,78 @@ All ArchUnit rules pass:
 | 1 | Multi-item + TMS compensation | Extend `place_order_multi_item.feature` to TMS rejection path |
 | 2 | Observability BDD | Verify Prometheus metrics/saga.duration in BDD scenarios |
 | 3 | Resilience BDD | Circuit breaker state machine, retry, timeout scenarios |
+
+---
+
+# Sprint 1 Addendum: Saga Deepening (2026-07-13)
+
+## Summary
+
+Implemented production-grade Saga persistence, timeout detection, and compensation idempotency for `OrderPlacementSaga`. This addresses three critical reliability gaps: JVM crash recovery, orphaned pending sagas, and duplicate compensation execution.
+
+## Commits
+
+```
+7002c17 feat(saga): add CompensationLog persistence (Task 3)
+d1c0aec feat(saga): update SagaLogPersistenceAdapter with state tracking methods (Task 4)
+6090398 feat(saga): add SagaTimeoutDetector and SagaCompensationRequiredEvent (Task 5)
+06c3b1d feat(saga): integrate compensation idempotency into OrderPlacementSaga (Task 6)
+113402b feat(saga): add saga timeout configuration and enable scheduling (Task 7)
+2aab4ee test(saga): add SagaTimeoutDetector and compensation idempotency tests (Task 8)
+```
+
+## Files Changed
+
+### Database Migrations (`order-infrastructure`)
+| File | Change |
+|------|--------|
+| `V4__extend_saga_logs.sql` | **New** — Added `saga_type`, `step_name`, `step_status`, `started_at`, `completed_at`, `compensation_status`, `retry_count`, `next_retry_at` |
+| `V5__create_compensation_logs.sql` | **New** — Created `compensation_logs` table with `idempotency_key` PK |
+
+### Domain / Application Layer (`order-application`)
+| File | Change |
+|------|--------|
+| `SagaLogPort.java` | Extended with 10 new methods for state tracking |
+| `SagaLogEntry.java` | **New** — DTO record for pending step queries |
+| `CompensationLogPort.java` | **New** — Port interface for idempotency |
+| `CompensationStatus.java` | **New** — Enum: `COMPLETED`, `FAILED` |
+| `SagaCompensationRequiredEvent.java` | **New** — Domain event for timeout compensation |
+| `SagaTimeoutDetector.java` | **New** — `@Scheduled` detector publishing compensation events |
+| `OrderPlacementSaga.java` | Integrated `CompensationLogPort` into `releaseAll()` and `releaseAllAsync()` |
+
+### Adapter Layer (`order-adapter`)
+| File | Change |
+|------|--------|
+| `SagaLogEntity.java` | Extended with saga state tracking fields |
+| `SagaLogJpaRepository.java` | Added `findPendingStepsOlderThan()` query |
+| `SagaLogPersistenceAdapter.java` | Implemented all 10 new SagaLogPort methods |
+| `CompensationLogEntity.java` | **New** — JPA entity for compensation_logs |
+| `CompensationLogJpaRepository.java` | **New** — Spring Data JPA repository |
+| `CompensationLogPersistenceAdapter.java` | **New** — Adapter implementing CompensationLogPort |
+
+### Configuration (`order-infrastructure`)
+| File | Change |
+|------|--------|
+| `application.yml` | Added `app.saga.timeout.*` configuration |
+| `OrderServiceApplication.java` | Added `@EnableScheduling` |
+
+### Tests (`order-application`)
+| File | Change |
+|------|--------|
+| `OrderPlacementSagaTest.java` | Added `CompensationLogPort` mock + skip-already-compensated test |
+| `SagaTimeoutDetectorTest.java` | **New** — 2 tests (detect timeout / no pending steps) |
+
+## Verification
+
+| Module | Tests | Result |
+|--------|-------|--------|
+| `order-application` | 82/82 | ✅ PASS |
+| `order-adapter` | 99/99 | ✅ PASS |
+| `order-infrastructure` | 15/15 | ✅ PASS |
+
+## Architecture Compliance
+
+- All changes follow hexagonal architecture (port/adapter pattern) ✅
+- No domain logic leaked into adapters ✅
+- `@Scheduled` task isolated in application service layer ✅
+- Compensation idempotency key format: `compensate:{orderId}:{stepName}:{reservationId}` ✅

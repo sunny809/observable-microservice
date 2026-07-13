@@ -1,94 +1,147 @@
-### Task 2: Loki + Promtail 配置
+### Task 2: 扩展 SagaLogPort 接口 + SagaLogEntity
 
 **Files:**
-- Create: `docker/loki/loki-config.yml`
-- Create: `docker/loki/promtail-config.yml`
+- Modify: `order-application/src/main/java/com/example/order/application/port/out/SagaLogPort.java`
+- Modify: `order-adapter/src/main/java/com/example/order/adapter/outbound/persistence/SagaLogEntity.java`
 
 **Interfaces:**
-- Produces: Loki 本地存储配置 + Promtail 日志采集 pipeline
+- Consumes: 无（这是基础接口扩展）
+- Produces: 扩展后的 SagaLogPort 接口，新增状态追踪方法
 
-- [ ] **Step 1: 创建 Loki 配置**
+- [ ] **Step 1: 扩展 SagaLogPort 接口**
 
-```yaml
-# docker/loki/loki-config.yml
-auth_enabled: false
+```java
+// order-application/src/main/java/com/example/order/application/port/out/SagaLogPort.java
+package com.example.order.application.port.out;
 
-server:
-  http_listen_port: 3100
-  grpc_listen_port: 9096
+import java.util.List;
 
-common:
-  path_prefix: /loki
-  storage:
-    filesystem:
-      chunks_directory: /loki/chunks
-      rules_directory: /loki/rules
-  replication_factor: 1
-  ring:
-    instance_addr: 127.0.0.1
-    kvstore:
-      store: inmemory
+public interface SagaLogPort {
+    void recordStep(String orderId, String step, String detail);
 
-schema_config:
-  configs:
-    - from: 2024-01-01
-      store: boltdb-shipper
-      object_store: filesystem
-      schema: v11
-      index:
-        prefix: index_
-        period: 24h
+    void recordCompensation(String orderId, String reservationId, String reason);
 
-limits_config:
-  retention_period: 168h  # 7 days
-  max_query_lookback: 168h
+    void recordSagaStepStarted(String orderId, String stepName);
+
+    void recordSagaStepCompleted(String orderId, String stepName, String message);
+
+    void recordSagaStepFailed(String orderId, String stepName, String error);
+
+    void recordSagaCompensationRequired(String orderId, String stepName, String reason);
+
+    void recordSagaCompensationStarted(String orderId, String stepName);
+
+    void recordSagaCompensationCompleted(String orderId, String stepName);
+
+    void recordSagaCompensationFailed(String orderId, String stepName, String error);
+
+    List<SagaLogEntry> findPendingStepsOlderThan(java.time.Duration timeout);
+}
 ```
 
-- [ ] **Step 2: 创建 Promtail 配置**
+- [ ] **Step 2: 创建 SagaLogEntry DTO**
 
-```yaml
-# docker/loki/promtail-config.yml
-server:
-  http_listen_port: 9080
-  grpc_listen_port: 0
+```java
+// order-application/src/main/java/com/example/order/application/port/out/SagaLogEntry.java
+package com.example.order.application.port.out;
 
-positions:
-  filename: /tmp/positions.yaml
+import java.time.LocalDateTime;
 
-clients:
-  - url: http://loki:3100/loki/api/v1/push
-
-scrape_configs:
-  - job_name: docker
-    docker_sd_configs:
-      - host: unix:///var/run/docker.sock
-        refresh_interval: 5s
-    relabel_configs:
-      - source_labels: ['__meta_docker_container_name']
-        regex: '/(.*)'
-        target_label: 'container'
-      - source_labels: ['__meta_docker_container_log_stream']
-        target_label: 'log_stream'
-    pipeline_stages:
-      - json:
-          expressions:
-            level: level
-            traceId: traceId
-            service: service
-            orderId: orderId
-      - labels:
-          level:
-          service:
-      - timestamp:
-          source: '@timestamp'
-          format: RFC3339
+public record SagaLogEntry(
+    Long id,
+    String orderId,
+    String stepName,
+    String stepStatus,
+    LocalDateTime startedAt,
+    LocalDateTime completedAt
+) {}
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 3: 扩展 SagaLogEntity**
+
+```java
+// order-adapter/src/main/java/com/example/order/adapter/outbound/persistence/SagaLogEntity.java
+package com.example.order.adapter.outbound.persistence;
+
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "saga_logs")
+public class SagaLogEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "order_id", nullable = false)
+    private String orderId;
+
+    @Column(name = "step", nullable = false)
+    private String step;
+
+    @Column(name = "detail", nullable = false)
+    private String detail;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "saga_type")
+    private String sagaType;
+
+    @Column(name = "step_name")
+    private String stepName;
+
+    @Column(name = "step_status")
+    private String stepStatus;
+
+    @Column(name = "started_at")
+    private LocalDateTime startedAt;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
+    @Column(name = "compensation_status")
+    private String compensationStatus;
+
+    @Column(name = "retry_count")
+    private Integer retryCount;
+
+    @Column(name = "next_retry_at")
+    private LocalDateTime nextRetryAt;
+
+    public SagaLogEntity() {}
+
+    public SagaLogEntity(String orderId, String step, String detail, LocalDateTime createdAt) {
+        this.orderId = orderId;
+        this.step = step;
+        this.detail = detail;
+        this.createdAt = createdAt;
+    }
+
+    // getters
+    public Long getId() { return id; }
+    public String getOrderId() { return orderId; }
+    public String getStep() { return step; }
+    public String getDetail() { return detail; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getSagaType() { return sagaType; }
+    public String getStepName() { return stepName; }
+    public String getStepStatus() { return stepStatus; }
+    public LocalDateTime getStartedAt() { return startedAt; }
+    public LocalDateTime getCompletedAt() { return completedAt; }
+    public String getCompensationStatus() { return compensationStatus; }
+    public Integer getRetryCount() { return retryCount; }
+    public LocalDateTime getNextRetryAt() { return nextRetryAt; }
+}
+```
+
+- [ ] **Step 4: Commit**
 
 ```bash
-git add docker/loki/loki-config.yml docker/loki/promtail-config.yml
-git commit -m "feat(observability): add Loki + Promtail config"
+git add order-application/src/main/java/com/example/order/application/port/out/
+git add order-adapter/src/main/java/com/example/order/adapter/outbound/persistence/SagaLogEntity.java
+git commit -m "feat(saga): extend SagaLogPort and SagaLogEntity for state tracking"
 ```
 
 ---

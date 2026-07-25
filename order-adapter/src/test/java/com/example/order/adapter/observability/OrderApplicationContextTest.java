@@ -2,7 +2,7 @@ package com.example.order.adapter.observability;
 
 import io.o11y.kit.autoconfigure.O11yKitProperties;
 import io.o11y.kit.http.HttpMetricRecorder;
-import io.o11y.kit.spring.webmvc.ServerObservationHandler;
+import io.o11y.kit.webmvc.ServerObservationHandler;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

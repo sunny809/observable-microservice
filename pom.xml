@@ -75,12 +75,12 @@
             <dependency>
                 <groupId>io.o11y.kit</groupId>
                 <artifactId>o11y-kit-spring-boot-starter</artifactId>
-                <version>0.4.0-beta</version>
+                <version>0.5.0</version>
             </dependency>
             <dependency>
                 <groupId>io.o11y.kit</groupId>
-                <artifactId>o11y-kit-api</artifactId>
-                <version>0.4.0-beta</version>
+                <artifactId>o11y-kit-core</artifactId>
+                <version>0.5.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

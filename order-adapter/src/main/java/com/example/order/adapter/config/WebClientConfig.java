@@ -1,6 +1,6 @@
 package com.example.order.adapter.config;
 
-import io.o11y.kit.spring.webflux.ClientObservationHandler;
+import io.o11y.kit.webflux.ClientObservationHandler;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;

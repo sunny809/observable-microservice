@@ -2,6 +2,8 @@ package com.example.order.adapter.metrics;
 
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.o11y.kit.metrics.BusinessMetricsPort;
+import io.o11y.kit.metrics.MicrometerMetricsAdapter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -20,7 +22,8 @@ class OrderMetricsTest {
     @BeforeEach
     void setUp() {
         meterRegistry = new SimpleMeterRegistry();
-        metrics = new OrderMetrics(meterRegistry);
+        BusinessMetricsPort businessMetrics = new MicrometerMetricsAdapter(meterRegistry);
+        metrics = new OrderMetrics(businessMetrics);
     }
 
     @Test
@@ -62,11 +65,11 @@ class OrderMetricsTest {
         assertThat(meterRegistry.getMeters()).anyMatch(m ->
                 m.getId().getName().equals("inventory.reservation")
                 && "SKU-1".equals(m.getId().getTag("sku"))
-                && "success".equals(m.getId().getTag("result")));
+                && "true".equals(m.getId().getTag("result")));
         assertThat(meterRegistry.getMeters()).anyMatch(m ->
                 m.getId().getName().equals("inventory.reservation")
                 && "SKU-1".equals(m.getId().getTag("sku"))
-                && "failure".equals(m.getId().getTag("result")));
+                && "false".equals(m.getId().getTag("result")));
     }
 
     @Test

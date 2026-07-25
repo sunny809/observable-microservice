@@ -12,7 +12,6 @@
 
     <modules>
         <module>o11y-kit-core</module>
-        <module>o11y-kit-spring-boot-autoconfigure</module>
         <module>o11y-kit-spring-boot-starter</module>
         <module>o11y-kit-test</module>
     </modules>
@@ -62,12 +61,7 @@
                 <artifactId>o11y-kit-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.o11y.kit</groupId>
-                <artifactId>o11y-kit-spring-boot-autoconfigure</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-        </dependencies>
+            </dependencies>
     </dependencyManagement>
 
     <build>

@@ -1,11 +1,13 @@
 package com.example.order.adapter.outbound.persistence;
 
 import jakarta.persistence.*;
+import org.springframework.data.domain.Persistable;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "compensation_logs")
-public class CompensationLogEntity {
+public class CompensationLogEntity implements Persistable<String> {
 
     @Id
     @Column(name = "idempotency_key")
@@ -40,6 +42,15 @@ public class CompensationLogEntity {
         this.status = status;
         this.attemptedAt = LocalDateTime.now();
         this.errorMessage = errorMessage;
+    }
+
+    @Override
+    public String getId() { return idempotencyKey; }
+
+    @Override
+    @Transient
+    public boolean isNew() {
+        return true; // always persist (INSERT), never merge (UPDATE) — compensation logs are immutable
     }
 
     // getters

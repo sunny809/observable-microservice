@@ -8,5 +8,6 @@ public record SagaLogEntry(
     String stepName,
     String stepStatus,
     LocalDateTime startedAt,
-    LocalDateTime completedAt
+    LocalDateTime completedAt,
+    String detail
 ) {}

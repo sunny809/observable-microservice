@@ -100,7 +100,8 @@ class OrderPlacementSagaTest {
         assertNotNull(result.getOrderId());
         assertEquals(OrderStatus.CREATED, result.getStatus());
         verify(orderRepository).save(any(Order.class));
-        verify(sagaLogPort).recordStep(anyString(), eq("ORDER_CREATED"), anyString());
+        verify(sagaLogPort).recordSagaStepStarted(anyString(), eq("ORDER_CREATED"));
+        verify(sagaLogPort).recordSagaStepCompleted(anyString(), eq("ORDER_CREATED"), anyString());
         verify(eventPublisher).publish(any(WmsInstructionRequiredEvent.class));
         verify(metricsPort).recordOrderPlaced("CREATED");
         verify(metricsPort).recordSagaDuration(anyLong(), eq("success"));
@@ -183,7 +184,8 @@ class OrderPlacementSagaTest {
 
         verify(inventoryPort).confirm(any(ConfirmReservationCommand.class));
         verify(orderRepository).updateStatus(eq("ord-1"), eq(OrderStatus.WMS_ACKED));
-        verify(sagaLogPort).recordStep(eq("ord-1"), eq("WMS_ACKED"), anyString());
+        verify(sagaLogPort).recordSagaStepStarted(eq("ord-1"), eq("WMS_ACKED"));
+        verify(sagaLogPort).recordSagaStepCompleted(eq("ord-1"), eq("WMS_ACKED"), anyString());
         verify(metricsPort).recordSagaGap(eq("POST_COMMIT_TO_WMS"), anyLong());
         verify(metricsPort).recordSagaStepDuration(eq("WMS_ACKED"), anyLong(), eq("success"));
     }
@@ -210,7 +212,8 @@ class OrderPlacementSagaTest {
 
         verify(inventoryPort).release("resv-123");
         verify(orderRepository).updateStatus(eq("ord-1"), eq(OrderStatus.REJECTED));
-        verify(sagaLogPort).recordCompensation(eq("ord-1"), eq("resv-123"), anyString());
+        verify(sagaLogPort).recordSagaStepStarted(eq("ord-1"), eq("WMS_ACKED"));
+        verify(sagaLogPort).recordSagaStepFailed(eq("ord-1"), eq("WMS_ACKED"), anyString());
         verify(metricsPort).recordSagaGap(eq("POST_COMMIT_TO_WMS"), anyLong());
         verify(metricsPort).recordSagaStepDuration(eq("WMS_ACKED"), anyLong(), eq("rejected"));
     }
@@ -238,7 +241,8 @@ class OrderPlacementSagaTest {
 
         verify(inventoryPort).release("resv-123");
         verify(orderRepository).updateStatus(eq("ord-1"), eq(OrderStatus.REJECTED));
-        verify(sagaLogPort).recordCompensation(eq("ord-1"), eq("resv-123"), anyString());
+        verify(sagaLogPort).recordSagaStepStarted(eq("ord-1"), eq("WMS_ACKED"));
+        verify(sagaLogPort).recordSagaStepFailed(eq("ord-1"), eq("WMS_ACKED"), anyString());
         verify(metricsPort).recordSagaGap(eq("POST_COMMIT_TO_WMS"), anyLong());
         verify(metricsPort).recordSagaStepDuration(eq("WMS_ACKED"), anyLong(), eq("failure"));
     }
@@ -265,6 +269,8 @@ class OrderPlacementSagaTest {
         assertTrue(latch.await(ASYNC_TIMEOUT_SECONDS, TimeUnit.SECONDS));
 
         verify(confirmationScheduler).scheduleConfirmation(reservation);
+        verify(sagaLogPort).recordSagaStepStarted(eq("ord-1"), eq("WMS_ACKED"));
+        verify(sagaLogPort).recordSagaStepCompleted(eq("ord-1"), eq("WMS_ACKED"), anyString());
         verify(metricsPort).recordSagaGap(eq("POST_COMMIT_TO_WMS"), anyLong());
         verify(metricsPort).recordSagaStepDuration(eq("WMS_ACKED"), anyLong(), eq("success"));
     }

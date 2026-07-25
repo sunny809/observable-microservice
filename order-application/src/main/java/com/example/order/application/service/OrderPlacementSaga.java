@@ -165,7 +165,8 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
 
         String logMsg = String.format("Order persisted with %d reservation(s): %s",
                     reservations.size(), reservations.stream().map(InventoryReservation::getReservationId).toList());
-            sagaLogPort.recordStep(order.getOrderId(), SAGA_STEP_ORDER_CREATED, logMsg);
+        sagaLogPort.recordSagaStepStarted(order.getOrderId(), SAGA_STEP_ORDER_CREATED);
+        sagaLogPort.recordSagaStepCompleted(order.getOrderId(), SAGA_STEP_ORDER_CREATED, logMsg);
         eventPublisher.publish(new WmsInstructionRequiredEvent(order.getOrderId(),
                 new WmsShipmentInstruction(order.getOrderId(), primaryReservation.getReservationId()),
                 reservations));
@@ -198,6 +199,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
         confirmationScheduler.scheduleConfirmation(primaryReservation);
 
         long stepStart = System.nanoTime();
+        sagaLogPort.recordSagaStepStarted(event.getOrderId(), SAGA_STEP_WMS_ACKED);
         wmsPort.sendInstruction(event.getInstruction())
                 .thenCompose(ack -> {
                     if (ack.isAccepted()) {
@@ -205,14 +207,16 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                                 .thenRun(() -> transactionTemplate.executeWithoutResult(status -> {
                                     orderRepository.updateStatus(event.getOrderId(), OrderStatus.WMS_ACKED);
                                     metricsPort.recordSagaStepDuration(SAGA_STEP_WMS_ACKED, elapsedMillis(stepStart), "success");
-                                    sagaLogPort.recordStep(event.getOrderId(), SAGA_STEP_WMS_ACKED, String.format("WMS accepted instruction %s", ack.getMessageId()));
+                                    sagaLogPort.recordSagaStepCompleted(event.getOrderId(), SAGA_STEP_WMS_ACKED,
+                                        String.format("WMS accepted instruction %s", ack.getMessageId()));
                                 }));
                     } else {
                         return releaseAllAsync(allReservations, SAGA_STEP_WMS_ACKED)
                                 .thenRun(() -> transactionTemplate.executeWithoutResult(status -> {
                                     orderRepository.updateStatus(event.getOrderId(), OrderStatus.REJECTED);
                                     metricsPort.recordSagaStepDuration(SAGA_STEP_WMS_ACKED, elapsedMillis(stepStart), "rejected");
-                                    sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(), String.format("WMS rejected: %s", ack.getMessageId()));
+                                    sagaLogPort.recordSagaStepFailed(event.getOrderId(), SAGA_STEP_WMS_ACKED,
+                                        String.format("WMS rejected: %s", ack.getMessageId()));
                                 }));
                     }
                 })
@@ -221,7 +225,8 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                         releaseAll(allReservations, SAGA_STEP_WMS_ACKED);
                         orderRepository.updateStatus(event.getOrderId(), OrderStatus.REJECTED);
                         metricsPort.recordSagaStepDuration(SAGA_STEP_WMS_ACKED, elapsedMillis(stepStart), "failure");
-                        sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(), String.format("WMS transport failed: %s", ex.getMessage()));
+                        sagaLogPort.recordSagaStepFailed(event.getOrderId(), SAGA_STEP_WMS_ACKED,
+                            "WMS transport failed: " + ex.getMessage());
                     });
                     return null;
                 });
@@ -244,7 +249,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
         transactionTemplate.executeWithoutResult(status -> {
             orderRepository.updateStatus(event.getOrderId(), OrderStatus.WMS_PICKED);
             metricsPort.recordSagaStepDuration(SAGA_STEP_WMS_PICKED, elapsedMillis(stepStart), "success");
-            sagaLogPort.recordStep(event.getOrderId(), SAGA_STEP_WMS_PICKED,
+            sagaLogPort.recordSagaStepCompleted(event.getOrderId(), SAGA_STEP_WMS_PICKED,
                     String.format("WMS confirmed picking complete for reservation %s", primaryReservation.getReservationId()));
         });
 
@@ -276,6 +281,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
         List<InventoryReservation> allReservations = event.getReservations();
 
         long stepStart = System.nanoTime();
+        sagaLogPort.recordSagaStepStarted(event.getOrderId(), SAGA_STEP_TMS_DISPATCHED);
         tmsPort.sendInstruction(event.getInstruction())
                 .thenCompose(ack -> {
                     if (ack.isAccepted()) {
@@ -283,7 +289,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                                 .thenRun(() -> transactionTemplate.executeWithoutResult(status -> {
                             orderRepository.updateStatus(event.getOrderId(), OrderStatus.TMS_DISPATCHED);
                             metricsPort.recordSagaStepDuration(SAGA_STEP_TMS_DISPATCHED, elapsedMillis(stepStart), "success");
-                            sagaLogPort.recordStep(event.getOrderId(), SAGA_STEP_TMS_DISPATCHED,
+                            sagaLogPort.recordSagaStepCompleted(event.getOrderId(), SAGA_STEP_TMS_DISPATCHED,
                                     String.format("TMS accepted dispatch instruction %s", ack.getMessageId()));
                         }));
                     } else {
@@ -291,7 +297,7 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                                 .thenRun(() -> transactionTemplate.executeWithoutResult(status -> {
                                     orderRepository.updateStatus(event.getOrderId(), OrderStatus.TMS_REJECTED);
                                     metricsPort.recordSagaStepDuration(SAGA_STEP_TMS_DISPATCHED, elapsedMillis(stepStart), "rejected");
-                                    sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(),
+                                    sagaLogPort.recordSagaStepFailed(event.getOrderId(), SAGA_STEP_TMS_DISPATCHED,
                                             String.format("TMS rejected: %s", ack.getMessageId()));
                                 }));
                     }
@@ -301,8 +307,8 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
                         releaseAll(allReservations, SAGA_STEP_TMS_DISPATCHED);
                         orderRepository.updateStatus(event.getOrderId(), OrderStatus.TMS_REJECTED);
                         metricsPort.recordSagaStepDuration(SAGA_STEP_TMS_DISPATCHED, elapsedMillis(stepStart), "failure");
-                        sagaLogPort.recordCompensation(event.getOrderId(), primaryReservation.getReservationId(),
-                                String.format("TMS transport failed: %s", ex.getMessage()));
+                        sagaLogPort.recordSagaStepFailed(event.getOrderId(), SAGA_STEP_TMS_DISPATCHED,
+                                "TMS transport failed: " + ex.getMessage());
                     });
                     return null;
                 });
@@ -334,11 +340,14 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
     }
 
     /**
-     * Releases all inventory reservations. Exceptions during release are
-     * logged as compensation failures but not propagated, to ensure the saga
-     * can continue attempting to release remaining reservations.
+     * Releases all inventory reservations synchronously. Each reservation is
+     * released with idempotency protection to prevent duplicate compensation.
+     * Exceptions during release are logged but not propagated, ensuring the
+     * saga continues attempting remaining reservations.
      *
-     * @param reservations the list of reservations to release
+     * <p>The compensation log save is deliberately separated from the release
+     * try/catch block so that a save failure is never misattributed as a
+     * release failure.
      */
     private void releaseAll(List<InventoryReservation> reservations, String stepName) {
         for (InventoryReservation r : reservations) {
@@ -352,17 +361,26 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
 
             try {
                 inventoryPort.release(r.getReservationId()).join();
-                compensationLogPort.save(idempotencyKey, r.getOrderId(), stepName,
-                    r.getReservationId(), CompensationStatus.COMPLETED, null);
             } catch (Exception e) {
-                compensationLogPort.save(idempotencyKey, r.getOrderId(), stepName,
-                    r.getReservationId(), CompensationStatus.FAILED, e.getMessage());
                 sagaLogPort.recordCompensation(r.getOrderId(), r.getReservationId(),
                     "Release failed during compensation: " + e.getMessage());
+                saveCompensationLog(idempotencyKey, r, stepName, CompensationStatus.FAILED, e.getMessage());
+                continue;
             }
+
+            // Only reach here if release succeeded
+            saveCompensationLog(idempotencyKey, r, stepName, CompensationStatus.COMPLETED, null);
         }
     }
 
+    /**
+     * Releases all inventory reservations asynchronously. Each reservation is
+     * released with idempotency protection to prevent duplicate compensation.
+     *
+     * <p>The compensation log save is wrapped in a try-catch inside each
+     * callback to prevent save failures from being misattributed as release
+     * failures by the {@code exceptionally} handler.
+     */
     private CompletableFuture<Void> releaseAllAsync(List<InventoryReservation> reservations, String stepName) {
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (InventoryReservation r : reservations) {
@@ -376,18 +394,39 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
 
             futures.add(inventoryPort.release(r.getReservationId())
                 .thenRun(() -> {
-                    compensationLogPort.save(idempotencyKey, r.getOrderId(), stepName,
-                        r.getReservationId(), CompensationStatus.COMPLETED, null);
+                    // Save inside try-catch so a save failure is not caught by exceptionally below
+                    try {
+                        compensationLogPort.save(idempotencyKey, r.getOrderId(), stepName,
+                            r.getReservationId(), CompensationStatus.COMPLETED, null);
+                    } catch (Exception e) {
+                        sagaLogPort.recordCompensation(r.getOrderId(), r.getReservationId(),
+                            "Compensation log save failed after successful release: " + e.getMessage());
+                    }
                 })
                 .exceptionally(ex -> {
-                    compensationLogPort.save(idempotencyKey, r.getOrderId(), stepName,
-                        r.getReservationId(), CompensationStatus.FAILED, ex.getMessage());
                     sagaLogPort.recordCompensation(r.getOrderId(), r.getReservationId(),
                         "Release failed during compensation: " + ex.getMessage());
+                    saveCompensationLog(idempotencyKey, r, stepName, CompensationStatus.FAILED, ex.getMessage());
                     return null;
                 }));
         }
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+    }
+
+    /**
+     * Saves a compensation log entry, catching and logging any persistence
+     * failure (e.g., duplicate key) so that the release loop continues
+     * processing remaining reservations.
+     */
+    private void saveCompensationLog(String idempotencyKey, InventoryReservation r,
+                                     String stepName, CompensationStatus status, String errorMessage) {
+        try {
+            compensationLogPort.save(idempotencyKey, r.getOrderId(), stepName,
+                r.getReservationId(), status, errorMessage);
+        } catch (Exception e) {
+            sagaLogPort.recordCompensation(r.getOrderId(), r.getReservationId(),
+                "Failed to save compensation log: " + e.getMessage());
+        }
     }
 
     /**

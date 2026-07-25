@@ -4,12 +4,10 @@ import com.example.order.application.domain.SagaCompensationRequiredEvent;
 import com.example.order.application.port.out.DomainEventPublisher;
 import com.example.order.application.port.out.SagaLogEntry;
 import com.example.order.application.port.out.SagaLogPort;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -30,15 +28,13 @@ class SagaTimeoutDetectorTest {
     @Mock
     private DomainEventPublisher eventPublisher;
 
-    @InjectMocks
-    private SagaTimeoutDetector detector;
-
     @Test
     @DisplayName("should detect timeout and publish compensation event")
     void shouldDetectTimeoutAndPublishCompensationEvent() {
         // given
+        SagaTimeoutDetector detector = new SagaTimeoutDetector(sagaLogPort, eventPublisher, Duration.ofSeconds(300));
         SagaLogEntry entry = new SagaLogEntry(1L, "order-123", "WMS_ACKED", "PENDING",
-            LocalDateTime.now().minusMinutes(10), null);
+            LocalDateTime.now().minusMinutes(10), null, null);
         when(sagaLogPort.findPendingStepsOlderThan(any(Duration.class)))
             .thenReturn(List.of(entry));
 
@@ -54,6 +50,7 @@ class SagaTimeoutDetectorTest {
     @DisplayName("should do nothing when no pending steps")
     void shouldDoNothingWhenNoPendingSteps() {
         // given
+        SagaTimeoutDetector detector = new SagaTimeoutDetector(sagaLogPort, eventPublisher, Duration.ofSeconds(300));
         when(sagaLogPort.findPendingStepsOlderThan(any(Duration.class)))
             .thenReturn(List.of());
 

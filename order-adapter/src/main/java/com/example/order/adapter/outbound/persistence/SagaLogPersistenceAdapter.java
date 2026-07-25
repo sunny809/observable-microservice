@@ -33,6 +33,7 @@ public class SagaLogPersistenceAdapter implements SagaLogPort {
     public void recordSagaStepStarted(String orderId, String stepName) {
         SagaLogEntity entity = new SagaLogEntity();
         entity.setOrderId(orderId);
+        entity.setStep(stepName);
         entity.setStepName(stepName);
         entity.setStepStatus("PENDING");
         entity.setStartedAt(LocalDateTime.now());
@@ -43,35 +44,28 @@ public class SagaLogPersistenceAdapter implements SagaLogPort {
 
     @Override
     public void recordSagaStepCompleted(String orderId, String stepName, String message) {
-        SagaLogEntity entity = new SagaLogEntity();
-        entity.setOrderId(orderId);
-        entity.setStepName(stepName);
+        SagaLogEntity entity = findOrCreatePendingStep(orderId, stepName);
         entity.setStepStatus("COMPLETED");
         entity.setCompletedAt(LocalDateTime.now());
         entity.setDetail(message);
-        entity.setCreatedAt(LocalDateTime.now());
         repository.save(entity);
     }
 
     @Override
     public void recordSagaStepFailed(String orderId, String stepName, String error) {
-        SagaLogEntity entity = new SagaLogEntity();
-        entity.setOrderId(orderId);
-        entity.setStepName(stepName);
+        SagaLogEntity entity = findOrCreatePendingStep(orderId, stepName);
         entity.setStepStatus("FAILED");
+        entity.setCompletedAt(LocalDateTime.now());
         entity.setDetail(error);
-        entity.setCreatedAt(LocalDateTime.now());
         repository.save(entity);
     }
 
     @Override
     public void recordSagaCompensationRequired(String orderId, String stepName, String reason) {
-        SagaLogEntity entity = new SagaLogEntity();
-        entity.setOrderId(orderId);
-        entity.setStepName(stepName);
+        SagaLogEntity entity = findOrCreatePendingStep(orderId, stepName);
         entity.setStepStatus("COMPENSATION_REQUIRED");
+        entity.setCompletedAt(LocalDateTime.now());
         entity.setDetail(reason);
-        entity.setCreatedAt(LocalDateTime.now());
         repository.save(entity);
     }
 
@@ -79,10 +73,12 @@ public class SagaLogPersistenceAdapter implements SagaLogPort {
     public void recordSagaCompensationStarted(String orderId, String stepName) {
         SagaLogEntity entity = new SagaLogEntity();
         entity.setOrderId(orderId);
+        entity.setStep(stepName);
         entity.setStepName(stepName);
         entity.setStepStatus("COMPENSATING");
-        entity.setDetail("Compensation started");
+        entity.setStartedAt(LocalDateTime.now());
         entity.setCreatedAt(LocalDateTime.now());
+        entity.setDetail("Compensation started");
         repository.save(entity);
     }
 
@@ -90,10 +86,12 @@ public class SagaLogPersistenceAdapter implements SagaLogPort {
     public void recordSagaCompensationCompleted(String orderId, String stepName) {
         SagaLogEntity entity = new SagaLogEntity();
         entity.setOrderId(orderId);
+        entity.setStep(stepName);
         entity.setStepName(stepName);
-        entity.setCompensationStatus("COMPLETED");
-        entity.setDetail("Compensation completed");
+        entity.setStepStatus("COMPENSATED");
+        entity.setCompletedAt(LocalDateTime.now());
         entity.setCreatedAt(LocalDateTime.now());
+        entity.setDetail("Compensation completed");
         repository.save(entity);
     }
 
@@ -101,10 +99,12 @@ public class SagaLogPersistenceAdapter implements SagaLogPort {
     public void recordSagaCompensationFailed(String orderId, String stepName, String error) {
         SagaLogEntity entity = new SagaLogEntity();
         entity.setOrderId(orderId);
+        entity.setStep(stepName);
         entity.setStepName(stepName);
-        entity.setCompensationStatus("FAILED");
-        entity.setDetail(error);
+        entity.setStepStatus("COMPENSATION_FAILED");
+        entity.setCompletedAt(LocalDateTime.now());
         entity.setCreatedAt(LocalDateTime.now());
+        entity.setDetail(error);
         repository.save(entity);
     }
 
@@ -114,8 +114,29 @@ public class SagaLogPersistenceAdapter implements SagaLogPort {
         return repository.findPendingStepsOlderThan(threshold).stream()
             .map(e -> new SagaLogEntry(
                 e.getId(), e.getOrderId(), e.getStepName(),
-                e.getStepStatus(), e.getStartedAt(), e.getCompletedAt()
+                e.getStepStatus(), e.getStartedAt(), e.getCompletedAt(),
+                e.getDetail()
             ))
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Finds the latest PENDING step for the given order and step name, or creates
+     * a new PENDING entity if none exists. This ensures that status transitions
+     * (COMPLETED, FAILED, COMPENSATION_REQUIRED) update the existing row rather
+     * than inserting duplicate rows.
+     */
+    private SagaLogEntity findOrCreatePendingStep(String orderId, String stepName) {
+        return repository.findLatestPendingStep(orderId, stepName)
+            .orElseGet(() -> {
+                SagaLogEntity entity = new SagaLogEntity();
+                entity.setOrderId(orderId);
+                entity.setStep(stepName);
+                entity.setStepName(stepName);
+                entity.setStepStatus("PENDING");
+                entity.setStartedAt(LocalDateTime.now());
+                entity.setCreatedAt(LocalDateTime.now());
+                return entity;
+            });
     }
 }

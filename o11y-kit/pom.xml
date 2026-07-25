@@ -9,6 +9,27 @@
     <packaging>pom</packaging>
     <name>o11y-kit</name>
     <description>Lightweight, non-invasive HTTP observability SDK for Spring Boot</description>
+    <url>https://github.com/sunny809/o11y-kit</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:git:git@github.com:sunny809/o11y-kit.git</connection>
+        <developerConnection>scm:git:git@github.com:sunny809/o11y-kit.git</developerConnection>
+        <url>https://github.com/sunny809/o11y-kit</url>
+    </scm>
+
+    <developers>
+        <developer>
+            <name>o11y-kit team</name>
+            <email>team@o11y.kit</email>
+        </developer>
+    </developers>
 
     <modules>
         <module>o11y-kit-core</module>
@@ -127,6 +148,27 @@
                     <execution>
                         <id>report</id>
                         <goals><goal>report</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Maven Central: source and javadoc JARs -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals><goal>jar-no-fork</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals><goal>jar</goal></goals>
                     </execution>
                 </executions>
             </plugin>

@@ -1,4 +1,4 @@
-package io.o11y.kit.spring.webmvc.client;
+package io.o11y.kit.webmvc.client;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;

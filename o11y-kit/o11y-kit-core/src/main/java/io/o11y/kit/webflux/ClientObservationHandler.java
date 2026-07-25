@@ -1,4 +1,4 @@
-package io.o11y.kit.spring.webflux;
+package io.o11y.kit.webflux;
 
 import io.o11y.kit.http.HttpMetricRecorder;
 import io.opentelemetry.api.trace.Span;

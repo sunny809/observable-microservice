@@ -1,4 +1,4 @@
-package io.o11y.kit.spring.webmvc.client;
+package io.o11y.kit.webmvc.client;
 
 import io.o11y.kit.http.HttpMetricRecorder;
 import io.opentelemetry.api.trace.Span;

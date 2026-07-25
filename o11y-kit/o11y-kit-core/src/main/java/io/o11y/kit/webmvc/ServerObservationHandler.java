@@ -1,4 +1,4 @@
-package io.o11y.kit.spring.webmvc;
+package io.o11y.kit.webmvc;
 
 import io.o11y.kit.http.HttpMetricRecorder;
 import io.o11y.kit.http.TraceIdResolver;

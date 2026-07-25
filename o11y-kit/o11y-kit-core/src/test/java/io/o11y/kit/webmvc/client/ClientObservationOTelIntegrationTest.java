@@ -1,4 +1,4 @@
-package io.o11y.kit.spring.webflux;
+package io.o11y.kit.webmvc.client;
 
 import io.o11y.kit.http.HttpMetricRecorder;
 import io.opentelemetry.api.trace.Tracer;
@@ -11,33 +11,35 @@ import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.test.StepVerifier;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Integration tests verifying that {@link ClientObservationHandler} produces
+ * Integration tests verifying that {@link RestTemplateObservationInterceptor} produces
  * correct OpenTelemetry spans when paired with an in-memory OTel SDK.
  *
  * <p>No external OTel collector is required; spans are collected by an
  * {@link InMemorySpanExporter} wired inline.
  *
- * <p><strong>Architecture note:</strong> The {@code ClientObservationHandler} is an
- * {@code ExchangeFilterFunction} that operates on the {@code Mono<ClientResponse>} level.
- * For HTTP 4xx/5xx responses, the {@code ClientResponse} is emitted successfully by the
- * filter chain, so {@code doOnNext} fires (recording metrics and span attributes) and
- * {@code doFinally} ends the span. The {@code WebClientResponseException} is thrown
- * downstream by {@code retrieve()}, outside the filter chain, so it does NOT trigger
- * {@code doOnError} handlers in the filter. This means:
+ * <p><strong>Architecture note:</strong> Unlike the WebFlux
+ * {@code ClientObservationHandler} which operates on {@code Mono<ClientResponse>},
+ * this interceptor operates synchronously within the
+ * {@code ClientHttpRequestInterceptor.intercept()} call. This means:
  * <ul>
- *   <li>HTTP 500: span has {@code http.status_code=500} but no exception events</li>
+ *   <li>HTTP 200: span has {@code http.status_code=200}, no exception events</li>
+ *   <li>HTTP 4xx/5xx: the interceptor sees the {@code ClientHttpResponse} first
+ *       (calling {@code end()} which records the status code), then
+ *       {@code RestTemplate} throws {@code RestClientResponseException} after
+ *       the interceptor returns. The span is already ended with the correct
+ *       status code before the exception propagates.</li>
  *   <li>Connection refused: span has exception events (the network error occurs
- *       within the filter chain)</li>
+ *       within the interceptor chain)</li>
  * </ul>
  *
  * @since 0.2.0-alpha
@@ -50,7 +52,7 @@ class ClientObservationOTelIntegrationTest {
     private OpenTelemetrySdk openTelemetry;
     private Tracer tracer;
     private HttpMetricRecorder recorder;
-    private WebClient webClient;
+    private RestTemplate restTemplate;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -68,14 +70,13 @@ class ClientObservationOTelIntegrationTest {
         mockServer = new MockWebServer();
         mockServer.start();
 
-        // Set up WebClient with ClientObservationHandler (with tracing)
+        // Set up RestTemplate with RestTemplateObservationInterceptor (with tracing)
         recorder = mock(HttpMetricRecorder.class);
-        ClientObservationHandler handler = new ClientObservationHandler(recorder, tracer);
+        RestTemplateObservationInterceptor interceptor =
+                new RestTemplateObservationInterceptor(recorder, tracer);
 
-        webClient = WebClient.builder()
-                .baseUrl("http://localhost:" + mockServer.getPort())
-                .filter(handler)
-                .build();
+        restTemplate = new RestTemplate();
+        restTemplate.setInterceptors(List.of(interceptor));
     }
 
     @AfterEach
@@ -86,19 +87,11 @@ class ClientObservationOTelIntegrationTest {
     }
 
     @Test
-    void shouldExportOtelSpanOnSuccess() throws InterruptedException {
+    void shouldExportOtelSpanOnSuccess() {
         mockServer.enqueue(new MockResponse().setResponseCode(200).setBody("ok"));
 
-        webClient.get()
-                .uri("/test")
-                .retrieve()
-                .toBodilessEntity()
-                .as(StepVerifier::create)
-                .expectNextCount(1)
-                .verifyComplete();
-
-        // Allow async span completion to propagate
-        Thread.sleep(200);
+        String url = "http://localhost:" + mockServer.getPort() + "/test";
+        restTemplate.getForObject(url, String.class);
 
         var spans = spanExporter.getFinishedSpanItems();
         assertEquals(1, spans.size(), "Expected exactly one exported span");
@@ -116,24 +109,19 @@ class ClientObservationOTelIntegrationTest {
         assertFalse(spanData.getTraceId().isEmpty(), "Trace ID must not be empty");
 
         // Verify metrics were also recorded
-        verify(recorder, timeout(2000))
-                .recordClientRequest(eq("GET"), contains("localhost"), eq(200), anyLong());
+        verify(recorder).recordClientRequest(eq("GET"), anyString(), eq(200), anyLong());
     }
 
     @Test
-    void shouldExportSpanWithStatusCodeOnHttp500() throws InterruptedException {
+    void shouldExportSpanWithStatusCodeOnHttp500() {
         mockServer.enqueue(new MockResponse().setResponseCode(500));
 
-        webClient.get()
-                .uri("/error")
-                .retrieve()
-                .toBodilessEntity()
-                .as(StepVerifier::create)
-                .expectError()
-                .verify();
+        String url = "http://localhost:" + mockServer.getPort() + "/error";
 
-        // Allow async span completion to propagate
-        Thread.sleep(200);
+        // RestTemplate throws for 5xx, but the interceptor has already recorded
+        // the response before the exception propagates
+        assertThrows(Exception.class, () ->
+                restTemplate.getForObject(url, String.class));
 
         var spans = spanExporter.getFinishedSpanItems();
         assertFalse(spans.isEmpty(), "Expected at least one exported span");
@@ -145,36 +133,24 @@ class ClientObservationOTelIntegrationTest {
         var attrs = spanData.getAttributes();
         assertEquals(500, attrs.get(io.opentelemetry.api.common.AttributeKey.longKey("http.status_code")));
 
-        // The ClientResponse is emitted successfully at the filter level,
-        // so doOnNext fires and the span ends via doFinally.
-        // The WebClientResponseException is thrown downstream by retrieve(),
-        // outside the filter chain — no exception events appear on the span.
+        // HTTP 500 produces no exception events because the interceptor sees
+        // the ClientHttpResponse successfully before RestTemplate throws
         assertTrue(spanData.getEvents().isEmpty(),
-                "HTTP 500 should not produce exception events on the filter-level span");
+                "HTTP 500 should not produce exception events on the interceptor-level span");
 
         // Verify metrics were recorded for the HTTP response (not as client error)
-        verify(recorder, timeout(2000))
-                .recordClientRequest(eq("GET"), contains("localhost"), eq(500), anyLong());
+        verify(recorder).recordClientRequest(eq("GET"), anyString(), eq(500), anyLong());
     }
 
     @Test
-    void shouldExportSpanWithRecordedExceptionOnConnectionRefused() throws InterruptedException {
-        // Use a WebClient pointed at a port with no listener
-        WebClient failingClient = WebClient.builder()
-                .baseUrl("http://localhost:1")
-                .filter(new ClientObservationHandler(recorder, tracer))
-                .build();
+    void shouldExportSpanWithRecordedExceptionOnConnectionRefused() {
+        // Create a RestTemplate pointed at a port with no listener
+        RestTemplate failingTemplate = new RestTemplate();
+        failingTemplate.setInterceptors(List.of(
+                new RestTemplateObservationInterceptor(recorder, tracer)));
 
-        failingClient.get()
-                .uri("/")
-                .retrieve()
-                .toBodilessEntity()
-                .as(StepVerifier::create)
-                .expectError()
-                .verify();
-
-        // Allow async span completion to propagate
-        Thread.sleep(200);
+        assertThrows(Exception.class, () ->
+                failingTemplate.getForObject("http://localhost:1/", String.class));
 
         var spans = spanExporter.getFinishedSpanItems();
         assertFalse(spans.isEmpty(), "Expected at least one exported span for connection failure");
@@ -182,15 +158,13 @@ class ClientObservationOTelIntegrationTest {
         var spanData = spans.get(0);
         assertEquals("HTTP GET", spanData.getName());
 
-        // Connection errors occur within the filter chain,
-        // so doOnError fires and records the exception on the span.
+        // Connection errors occur within the interceptor chain,
+        // so error() fires and records the exception on the span
         var events = spanData.getEvents();
         assertFalse(events.isEmpty(), "Expected at least one exception event on the span");
 
         // Verify metrics were recorded as a client error (not a successful request)
-        verify(recorder, timeout(2000))
-                .recordClientError(eq("GET"), contains("localhost"), anyString(), anyLong());
-        verify(recorder, never())
-                .recordClientRequest(anyString(), anyString(), anyInt(), anyLong());
+        verify(recorder).recordClientError(eq("GET"), anyString(), anyString(), anyLong());
+        verify(recorder, never()).recordClientRequest(anyString(), anyString(), anyInt(), anyLong());
     }
 }

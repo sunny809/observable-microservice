@@ -3,6 +3,7 @@ package io.o11y.kit.spring.aop;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.Collection;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,10 +62,8 @@ class ObservedAspectTest {
         assertThat(timer.count()).isEqualTo(1);
 
         // Verify NO timer exists without the outcome tag (no double-recording)
-        Timer baseTimer = meterRegistry.find("o11y.observed.duration")
-                .tags("class", "TargetService", "method", "basicMethod")
-                .timer();
-        assertThat(baseTimer).isNull();
+        Collection<Timer> allTimers = meterRegistry.find("o11y.observed.duration").timers();
+        assertThat(allTimers).hasSize(1);
     }
 
     @Test

@@ -5,17 +5,15 @@
 
     <groupId>io.o11y.kit</groupId>
     <artifactId>o11y-kit</artifactId>
-    <version>0.4.0-beta</version>
+    <version>0.5.0</version>
     <packaging>pom</packaging>
     <name>o11y-kit</name>
     <description>Lightweight, non-invasive HTTP observability SDK for Spring Boot</description>
 
     <modules>
-        <module>o11y-kit-api</module>
-        <module>o11y-kit-micrometer</module>
+        <module>o11y-kit-core</module>
         <module>o11y-kit-spring-webmvc</module>
         <module>o11y-kit-spring-webflux</module>
-        <module>o11y-kit-spring-aop</module>
         <module>o11y-kit-spring-boot-autoconfigure</module>
         <module>o11y-kit-spring-boot-starter</module>
         <module>o11y-kit-test</module>
@@ -63,12 +61,7 @@
             <!-- Intra-project dependencies -->
             <dependency>
                 <groupId>io.o11y.kit</groupId>
-                <artifactId>o11y-kit-api</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.o11y.kit</groupId>
-                <artifactId>o11y-kit-micrometer</artifactId>
+                <artifactId>o11y-kit-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -84,11 +77,6 @@
             <dependency>
                 <groupId>io.o11y.kit</groupId>
                 <artifactId>o11y-kit-spring-boot-autoconfigure</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.o11y.kit</groupId>
-                <artifactId>o11y-kit-spring-aop</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

@@ -3,7 +3,7 @@ package io.o11y.kit.autoconfigure;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.o11y.kit.http.HttpMetricRecorder;
-import io.o11y.kit.spring.webmvc.client.RestTemplateObservationInterceptor;
+import io.o11y.kit.webmvc.client.RestTemplateObservationInterceptor;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;

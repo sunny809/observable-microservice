@@ -155,7 +155,7 @@ public class O11yKitProperties {
      * Configuration for inbound HTTP server observability features.
      *
      * <p>Allows controlling which requests are observed by the
-     * {@link io.o11y.kit.spring.webmvc.ServerObservationHandler}, which
+     * {@link io.o11y.kit.webmvc.ServerObservationHandler}, which
      * URL patterns to exclude, and whether Micrometer metrics are emitted.
      *
      * @since 0.2.0-alpha

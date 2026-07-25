@@ -2,8 +2,8 @@ package io.o11y.kit.autoconfigure;
 
 import io.o11y.kit.http.HttpMetricRecorder;
 import io.o11y.kit.http.O11yKitOrders;
-import io.o11y.kit.spring.webmvc.client.RestClientObservationInterceptor;
-import io.o11y.kit.spring.webmvc.client.RestTemplateObservationInterceptor;
+import io.o11y.kit.webmvc.client.RestClientObservationInterceptor;
+import io.o11y.kit.webmvc.client.RestTemplateObservationInterceptor;
 import io.opentelemetry.api.trace.Tracer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.annotation.Order;

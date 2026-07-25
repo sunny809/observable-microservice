@@ -2,7 +2,7 @@ package io.o11y.kit.autoconfigure;
 
 import io.o11y.kit.http.HttpMetricRecorder;
 import io.o11y.kit.micrometer.MicrometerHttpMetricRecorder;
-import io.o11y.kit.spring.webflux.ClientObservationHandler;
+import io.o11y.kit.webflux.ClientObservationHandler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;

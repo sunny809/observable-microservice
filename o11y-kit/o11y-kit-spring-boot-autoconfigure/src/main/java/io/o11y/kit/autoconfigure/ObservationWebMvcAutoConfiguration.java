@@ -1,7 +1,7 @@
 package io.o11y.kit.autoconfigure;
 
 import io.o11y.kit.http.HttpMetricRecorder;
-import io.o11y.kit.spring.webmvc.ServerObservationHandler;
+import io.o11y.kit.webmvc.ServerObservationHandler;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

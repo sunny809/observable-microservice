@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestPropertySource(properties = {
         "o11y.kit.client.enabled=false",
         "spring.main.banner-mode=off",
+        "spring.classformat.ignore=true",
         // Override the exclusions inherited from src/test/resources/application.yml
         // — for this test we DO want WebMvc auto-config so the servlet web context
         // (and our ServerObservationHandler) wire up correctly.

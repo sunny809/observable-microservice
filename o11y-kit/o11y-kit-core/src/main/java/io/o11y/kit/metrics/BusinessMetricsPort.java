@@ -3,15 +3,22 @@ package io.o11y.kit.metrics;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.common.lang.Nullable;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Generic business metrics SPI for recording application-level metrics
- * (counters, timers, gauges) without coupling to a specific metrics backend.
+ * Business metrics SPI for recording application-level metrics (counters,
+ * timers, gauges). The default implementation ({@link MicrometerMetricsAdapter})
+ * uses Micrometer.
  *
- * <p>Default implementation uses Micrometer ({@link MicrometerMetricsAdapter}).
- * Users can provide their own implementation to route to OpenTelemetry,
- * Dropwizard Metrics, or any other backend.
+ * <p>The SPI returns Micrometer types ({@link Counter}, {@link Timer},
+ * {@link Gauge}) for fluent API compatibility. Custom implementations can
+ * return Micrometer-compatible stubs from a test harness, or throw
+ * {@link UnsupportedOperationException} from methods they don't use.
+ *
+ * <p>Unless you need a different metrics backend, the simplest path is to
+ * include {@code o11y-kit-core} and use the auto-configured
+ * {@link MicrometerMetricsAdapter}.
  *
  * <p>Usage example:
  * <pre>{@code
@@ -45,21 +52,45 @@ public interface BusinessMetricsPort {
     Timer timer(String name, String... tags);
 
     /**
-     * Register a gauge that returns the given value.
+     * Obtain or create a timer with a human-readable description.
      * @param name metric name
-     * @param value the current value (may be updated later)
+     * @param description description shown in Prometheus HELP output
+     * @param tags key-value pairs
+     * @return the timer instance
+     */
+    Timer timer(String name, String description, String... tags);
+
+    /**
+     * Register a gauge that reports the given value. The value is a snapshot
+     * taken at registration time; for dynamic values, use {@link #counter(String, String...)}
+     * with appropriate tags, or obtain a meter reference from the returned {@link Gauge}
+     * and update it directly.
+     * @param name metric name
+     * @param value the value to report (snapshot at registration time)
      * @param tags key-value pairs
      * @return the gauge instance
      */
-    Gauge gauge(String name, Number value, String... tags);
+    Gauge gauge(String name, @Nullable Number value, String... tags);
 
     /** Increment a counter by 1. Convenience shortcut for {@code counter(name, tags).increment()}. */
     default void increment(String name, String... tags) {
+        requireEvenTags(tags);
         counter(name, tags).increment();
     }
 
     /** Record a duration to a timer. Convenience shortcut for {@code timer(name, tags).record(millis, MILLISECONDS)}. */
     default void recordDuration(String name, long millis, String... tags) {
+        requireEvenTags(tags);
         timer(name, tags).record(millis, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Validates that the tags array has an even number of elements (key-value pairs).
+     */
+    private void requireEvenTags(String... tags) {
+        if (tags.length % 2 != 0) {
+            throw new IllegalArgumentException(
+                "Tags must be key-value pairs (even number of elements), got " + tags.length);
+        }
     }
 }

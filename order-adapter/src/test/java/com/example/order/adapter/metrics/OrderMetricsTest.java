@@ -65,11 +65,11 @@ class OrderMetricsTest {
         assertThat(meterRegistry.getMeters()).anyMatch(m ->
                 m.getId().getName().equals("inventory.reservation")
                 && "SKU-1".equals(m.getId().getTag("sku"))
-                && "true".equals(m.getId().getTag("result")));
+                && "success".equals(m.getId().getTag("result")));
         assertThat(meterRegistry.getMeters()).anyMatch(m ->
                 m.getId().getName().equals("inventory.reservation")
                 && "SKU-1".equals(m.getId().getTag("sku"))
-                && "false".equals(m.getId().getTag("result")));
+                && "failure".equals(m.getId().getTag("result")));
     }
 
     @Test

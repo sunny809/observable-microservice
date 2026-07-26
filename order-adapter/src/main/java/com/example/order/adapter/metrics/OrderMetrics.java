@@ -20,6 +20,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class OrderMetrics implements MetricsPort {
 
+    private static final String METRIC_ORDERS_PLACED = "orders.placed";
+    private static final String METRIC_ORDERS_FAILED = "orders.failed";
+    private static final String METRIC_INVENTORY_RESERVATION = "inventory.reservation";
+    private static final String METRIC_SAGA_DURATION = "saga.duration";
+    private static final String METRIC_SAGA_STEP_DURATION = "saga.step.duration";
+    private static final String METRIC_SAGA_GAP_DURATION = "saga.gap.duration";
+
     private final BusinessMetricsPort metrics;
 
     public OrderMetrics(BusinessMetricsPort metrics) {
@@ -28,31 +35,34 @@ public class OrderMetrics implements MetricsPort {
 
     @Override
     public void recordOrderPlaced(String status) {
-        metrics.increment("orders.placed", "status", status);
+        metrics.increment(METRIC_ORDERS_PLACED, "status", status);
     }
 
     @Override
     public void recordOrderFailed(String reason) {
-        metrics.increment("orders.failed", "reason", reason);
+        metrics.increment(METRIC_ORDERS_FAILED, "reason", reason);
     }
 
     @Override
     public void recordInventoryReservation(String sku, boolean success) {
-        metrics.increment("inventory.reservation", "sku", sku, "result", String.valueOf(success));
+        metrics.increment(METRIC_INVENTORY_RESERVATION, "sku", sku, "result", success ? "success" : "failure");
     }
 
     @Override
     public void recordSagaDuration(long durationMillis, String outcome) {
-        metrics.recordDuration("saga.duration", durationMillis, "outcome", outcome);
+        metrics.timer(METRIC_SAGA_DURATION, "End-to-end duration of a single order placement saga",
+                "outcome", outcome).record(durationMillis, java.util.concurrent.TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void recordSagaStepDuration(String step, long durationMillis, String outcome) {
-        metrics.recordDuration("saga.step.duration", durationMillis, "step", step, "outcome", outcome);
+        metrics.timer(METRIC_SAGA_STEP_DURATION, "Duration of a single saga step",
+                "step", step, "outcome", outcome).record(durationMillis, java.util.concurrent.TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void recordSagaGap(String gap, long durationMillis) {
-        metrics.recordDuration("saga.gap.duration", durationMillis, "gap", gap);
+        metrics.timer(METRIC_SAGA_GAP_DURATION, "Idle time between two saga phases",
+                "gap", gap).record(durationMillis, java.util.concurrent.TimeUnit.MILLISECONDS);
     }
 }

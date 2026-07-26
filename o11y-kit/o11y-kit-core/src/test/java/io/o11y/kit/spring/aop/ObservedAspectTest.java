@@ -64,6 +64,7 @@ class ObservedAspectTest {
         // Verify NO timer exists without the outcome tag (no double-recording)
         Collection<Timer> allTimers = meterRegistry.find("o11y.observed.duration").timers();
         assertThat(allTimers).hasSize(1);
+        assertThat(allTimers).allMatch(t -> t.getId().getTag("outcome") != null);
     }
 
     @Test

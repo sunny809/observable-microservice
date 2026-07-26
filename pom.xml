@@ -22,7 +22,6 @@
         <module>order-application</module>
         <module>order-adapter</module>
         <module>order-infrastructure</module>
-        <module>order-o11y</module>
         <module>bdd-specs</module>
     </modules>
 

@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @since 0.1.0
  */
-public class MicrometerHttpMetricRecorder implements HttpMetricRecorder {
+public class MicrometerHttpMetricRecorder extends HttpMetricRecorder {
 
     private static final String SERVER_REQUESTS = "o11y.server.requests";
     private static final String CLIENT_REQUESTS = "o11y.client.requests";

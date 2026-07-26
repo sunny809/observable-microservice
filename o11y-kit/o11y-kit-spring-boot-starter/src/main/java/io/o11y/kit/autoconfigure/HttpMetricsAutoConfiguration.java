@@ -4,7 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.o11y.kit.http.HttpMetricRecorder;
 import io.o11y.kit.metrics.BusinessMetricsPort;
 import io.o11y.kit.metrics.MicrometerMetricsAdapter;
-import io.o11y.kit.micrometer.MicrometerHttpMetricRecorder;
+import io.o11y.kit.metrics.MicrometerHttpMetricRecorder;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

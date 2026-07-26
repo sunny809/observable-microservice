@@ -1,4 +1,4 @@
-package io.o11y.kit.micrometer;
+package io.o11y.kit.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;

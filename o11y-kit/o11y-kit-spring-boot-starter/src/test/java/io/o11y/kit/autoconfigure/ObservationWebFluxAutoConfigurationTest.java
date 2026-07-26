@@ -1,7 +1,7 @@
 package io.o11y.kit.autoconfigure;
 
 import io.o11y.kit.http.HttpMetricRecorder;
-import io.o11y.kit.micrometer.MicrometerHttpMetricRecorder;
+import io.o11y.kit.metrics.MicrometerHttpMetricRecorder;
 import io.o11y.kit.webflux.ClientObservationHandler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;

@@ -46,7 +46,7 @@ POST /api/v1/orders
 | API 文档 | SpringDoc OpenAPI 2.5 |
 | 测试 | JUnit 5，Mockito，AssertJ，Cucumber + WireMock，Testcontainers，ArchUnit |
 | 代码质量 | JaCoCo（80% 行覆盖率），SpotBugs，Checkstyle |
-| SDK | [o11y-kit](../o11y-kit/)（从本仓库抽离的可观测性 SDK） |
+| SDK | [o11y-kit](../o11y-kit (external dependency))（从本仓库抽离的可观测性 SDK） |
 
 ---
 
@@ -61,7 +61,7 @@ observable-microservice/
 ├── order-infrastructure/     # 基础设施入口：Spring Boot、OTel 配置、Flyway
 ├── (removed, merged into order-adapter)/               # OpenTelemetry 工具类（TracerHelper）
 ├── bdd-specs/                # Cucumber BDD 测试
-└── o11y-kit/                 # 抽离的可观测性 SDK
+└── o11y-kit (external dependency)                 # 抽离的可观测性 SDK
 ```
 
 ### 3.2 依赖方向（必须遵守）
@@ -410,10 +410,10 @@ try (Scope scope = span.makeCurrent()) {
 
 | 组件 | 文件 | 能力 |
 |------|------|------|
-| ServerObservationHandler | `o11y-kit/.../spring/webmvc/ServerObservationHandler.java` | MVC 请求计时、traceId 解析、响应头注入 |
-| ClientObservationHandler | `o11y-kit/.../spring/webflux/ClientObservationHandler.java` | WebClient 调用计时、子 span |
-| RestTemplateObservationInterceptor | `o11y-kit/.../spring/webmvc/client/RestTemplateObservationInterceptor.java` | RestTemplate 调用计时 |
-| RestClientObservationInterceptor | `o11y-kit/.../spring/webmvc/client/RestClientObservationInterceptor.java` | RestClient 调用计时 |
+| ServerObservationHandler | `o11y-kit (external dependency).../spring/webmvc/ServerObservationHandler.java` | MVC 请求计时、traceId 解析、响应头注入 |
+| ClientObservationHandler | `o11y-kit (external dependency).../spring/webflux/ClientObservationHandler.java` | WebClient 调用计时、子 span |
+| RestTemplateObservationInterceptor | `o11y-kit (external dependency).../spring/webmvc/client/RestTemplateObservationInterceptor.java` | RestTemplate 调用计时 |
+| RestClientObservationInterceptor | `o11y-kit (external dependency).../spring/webmvc/client/RestClientObservationInterceptor.java` | RestClient 调用计时 |
 
 ### 9.4 指标
 
@@ -611,7 +611,7 @@ docker-compose up -d
 | 迁移说明 | [`docs/MIGRATION.md`](MIGRATION.md) |
 | 路线图 | [`docs/ROADMAP.md`](ROADMAP.md) |
 | o11y-kit SDK 规范 | [`docs/SPEC.md`](SPEC.md) |
-| o11y-kit 使用文档 | [`o11y-kit/README.md`](../o11y-kit/README.md) |
+| o11y-kit 使用文档 | [`o11y-kit (external dependency)README.md`](../o11y-kit (external dependency)README.md) |
 
 ---
 

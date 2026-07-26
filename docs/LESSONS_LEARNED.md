@@ -126,7 +126,7 @@ The observability interceptors started as inline code in the adapter module. As 
 3. Tests for observability outnumbered tests for some business features
 4. Configuration properties (`o11y.kit.*`) had their own lifecycle independent of the application
 
-The extraction produced [o11y-kit](o11y-kit/), a separate 7-module SDK with its own versioning, test suite (82 tests), and documentation.
+The extraction produced [o11y-kit](o11y-kit (external dependency)), a separate 7-module SDK with its own versioning, test suite (82 tests), and documentation.
 
 ---
 

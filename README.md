@@ -226,7 +226,7 @@ observable-microservice/
 
 ## Related Projects
 
-- [o11y-kit](o11y-kit/) — The lightweight Spring HTTP observability SDK extracted from this blueprint. Provides the `o11y.server.requests` and `o11y.client.requests` metrics with a single dependency.
+- [o11y-kit](https://github.com/sunny809/o11y-kit) — The lightweight Spring HTTP observability SDK extracted from this blueprint. Provides the `o11y.server.requests` and `o11y.client.requests` metrics with a single dependency.
 
 ---
 

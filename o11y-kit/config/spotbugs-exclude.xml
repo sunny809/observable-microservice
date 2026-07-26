@@ -18,7 +18,11 @@
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
     <Match>
-        <Class name="io.o11y.kit.autoconfigure.O11yKitProperties$Client"/>
+        <Class name="io.o11y.kit.autoconfigure.ClientProperties"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="io.o11y.kit.autoconfigure.O11yKitProperties$Server"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
 </FindBugsFilter>

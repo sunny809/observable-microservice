@@ -9,7 +9,7 @@ Lightweight, non-invasive HTTP observability SDK for Spring Boot.
 
 | Module | Description |
 |--------|-------------|
-| `o11y-kit-core` | Core library: HTTP metric recording, WebMVC/WebFlux integration, AOP support, business metrics SPI |
+| `o11y-kit-core` | Core library: HTTP metric recording, WebMVC/WebFlux integration, AOP support |
 | `o11y-kit-spring-boot-starter` | Spring Boot auto-configuration — add this dependency to get started |
 | `o11y-kit-test` | Test harness and assertion utilities for integration tests |
 
@@ -31,29 +31,33 @@ That's it. HTTP server requests, client calls, and metrics are automatically rec
 
 - **HTTP Server Metrics** — automatically record request duration, status code, and method for every controller (WebMVC + WebFlux)
 - **HTTP Client Metrics** — record outbound HTTP call metrics for RestTemplate, RestClient, and WebClient
-- **Business Metrics SPI** — define your own business metrics via `BusinessMetricsPort` without coupling to Micrometer
+- **Direct Micrometer API** — use `MeterRegistry` directly for business metrics, no extra abstraction layer
 - **@Observed Annotation** — AOP-based method-level observation with success/failure outcomes
 - **Trace ID Propagation** — automatic trace ID resolution from HTTP headers (W3C traceparent)
 
-## Business Metrics SPI
+## Recording Business Metrics
 
-Define your own business metrics interface and implement it via `BusinessMetricsPort`:
+o11y-kit integrates with Spring Boot's Micrometer auto-configuration. Inject `MeterRegistry` directly to record your own metrics:
 
 ```java
 @Component
 public class OrderMetrics {
-    private final BusinessMetricsPort metrics;
+    private final MeterRegistry registry;
 
-    public OrderMetrics(BusinessMetricsPort metrics) {
-        this.metrics = metrics;
+    public OrderMetrics(MeterRegistry registry) {
+        this.registry = registry;
     }
 
     public void recordOrderPlaced(String status) {
-        metrics.increment("orders.placed", "status", status);
+        registry.counter("orders.placed", "status", status).increment();
     }
 
     public void recordSagaDuration(long ms, String outcome) {
-        metrics.recordDuration("saga.duration", ms, "outcome", outcome);
+        Timer.builder("saga.duration")
+                .description("End-to-end duration of a single order placement saga")
+                .tag("outcome", outcome)
+                .register(registry)
+                .record(ms, TimeUnit.MILLISECONDS);
     }
 }
 ```

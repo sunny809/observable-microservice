@@ -1,6 +1,8 @@
 package io.o11y.kit.sample;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.util.concurrent.TimeUnit;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +28,15 @@ public class SampleApplication {
 
         @GetMapping("/hello")
         public String hello() {
+            long start = System.nanoTime();
+
             registry.counter("api.hello.calls").increment();
+
+            Timer.builder("api.hello.duration")
+                    .description("Response time for /api/hello")
+                    .register(registry)
+                    .record(System.nanoTime() - start, TimeUnit.NANOSECONDS);
+
             return "Hello, o11y-kit!";
         }
     }

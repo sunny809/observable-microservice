@@ -2,8 +2,6 @@ package com.example.order.adapter.metrics;
 
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import io.o11y.kit.metrics.BusinessMetricsPort;
-import io.o11y.kit.metrics.MicrometerMetricsAdapter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -22,8 +20,7 @@ class OrderMetricsTest {
     @BeforeEach
     void setUp() {
         meterRegistry = new SimpleMeterRegistry();
-        BusinessMetricsPort businessMetrics = new MicrometerMetricsAdapter(meterRegistry);
-        metrics = new OrderMetrics(businessMetrics);
+        metrics = new OrderMetrics(meterRegistry);
     }
 
     @Test

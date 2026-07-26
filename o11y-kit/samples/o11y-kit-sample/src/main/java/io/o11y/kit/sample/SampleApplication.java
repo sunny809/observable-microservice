@@ -1,6 +1,6 @@
 package io.o11y.kit.sample;
 
-import io.o11y.kit.metrics.BusinessMetricsPort;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,15 +18,15 @@ public class SampleApplication {
     @RequestMapping("/api")
     public static class SampleController {
 
-        private final BusinessMetricsPort metrics;
+        private final MeterRegistry registry;
 
-        public SampleController(BusinessMetricsPort metrics) {
-            this.metrics = metrics;
+        public SampleController(MeterRegistry registry) {
+            this.registry = registry;
         }
 
         @GetMapping("/hello")
         public String hello() {
-            metrics.increment("api.hello.calls");
+            registry.counter("api.hello.calls").increment();
             return "Hello, o11y-kit!";
         }
     }

@@ -2,8 +2,6 @@ package io.o11y.kit.autoconfigure;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.o11y.kit.http.HttpMetricRecorder;
-import io.o11y.kit.metrics.BusinessMetricsPort;
-import io.o11y.kit.metrics.MicrometerMetricsAdapter;
 import io.o11y.kit.metrics.MicrometerHttpMetricRecorder;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -30,11 +28,5 @@ public class HttpMetricsAutoConfiguration {
     @ConditionalOnMissingBean
     public HttpMetricRecorder httpMetricRecorder(MeterRegistry meterRegistry) {
         return new MicrometerHttpMetricRecorder(meterRegistry);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(BusinessMetricsPort.class)
-    public BusinessMetricsPort businessMetricsPort(MeterRegistry registry) {
-        return new MicrometerMetricsAdapter(registry);
     }
 }

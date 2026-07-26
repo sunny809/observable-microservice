@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - 'v*'           # v0.2.0-alpha, v1.0.0, etc.
-      - 'o11y-kit/v*'  # o11y-kit/v0.2.0-alpha, etc.
 
 permissions:
   contents: write
@@ -24,16 +23,12 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Build o11y-kit
-        run: mvn clean install -DskipTests -f o11y-kit/pom.xml -B
 
       - name: Build order-demo
         run: mvn clean package -DskipTests -B
 
       - name: List artifacts
         run: |
-          echo "=== o11y-kit JARs ==="
-          find o11y-kit -name '*.jar' -not -path '*/target/site/*' | sort
           echo "=== order-demo JAR ==="
           ls -lh order-infrastructure/target/*.jar 2>/dev/null || echo "No JAR found"
 
@@ -41,7 +36,6 @@ jobs:
         run: |
           mkdir -p release
           cp order-infrastructure/target/*.jar release/
-          for jar in $(find o11y-kit -name '*.jar' -not -path '*/target/site/*' | grep -v 'sources\|javadoc'); do
             cp "$jar" release/
           done
           echo "Release artifacts:"
@@ -83,7 +77,6 @@ jobs:
           echo "\`\`\`xml" >> release-notes.md
           echo "<dependency>" >> release-notes.md
           echo "    <groupId>io.o11y.kit</groupId>" >> release-notes.md
-          echo "    <artifactId>o11y-kit-spring-boot-starter</artifactId>" >> release-notes.md
           echo "    <version>${TAG_NAME#v}</version>" >> release-notes.md
           echo "</dependency>" >> release-notes.md
           echo "\`\`\`" >> release-notes.md

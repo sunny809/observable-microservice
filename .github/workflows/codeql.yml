@@ -45,8 +45,6 @@ jobs:
           queries: security-and-quality
 
       - if: matrix.build-mode == 'manual'
-        name: Build o11y-kit (dependency)
-        run: mvn clean install -DskipTests -f o11y-kit/pom.xml -B
 
       - if: matrix.build-mode == 'manual'
         name: Build order-demo

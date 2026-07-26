@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- 包名替换必须一致：`com.example.order` → `com.order.demo`
+- 包名替换必须一致：`com.order.demo` → `com.order.demo`
 - 所有现有测试必须在包名替换后继续通过
 - order-demo 不再包含 o11y-kit 目录
 - 两个 repo 的 CI 必须独立可运行
@@ -18,7 +18,7 @@
 
 ---
 
-### Task 1: 包名替换 — com.example.order → com.order.demo
+### Task 1: 包名替换 — com.order.demo → com.order.demo
 
 **Files:**
 - Modify: 所有 Java 文件、pom.xml、application.yml、properties 文件
@@ -77,7 +77,7 @@ Expected: 82 tests, 0 failures
 ```bash
 cd /home/bjdeng/project/java_projects/order-demo
 git add -A
-git commit -m "refactor: rename package com.example.order to com.order.demo"
+git commit -m "refactor: rename package com.order.demo to com.order.demo"
 ```
 
 ---
@@ -107,7 +107,7 @@ cp order-o11y/src/main/java/com/example/order/o11y/util/TracerHelper.java order-
 
 ```bash
 # 替换 package 声明
-sed -i 's/package com.example.order.o11y.util/package com.order.demo.adapter.observability/' order-adapter/src/main/java/com/order/demo/adapter/observability/TracerHelper.java
+sed -i 's/package com.order.demo.o11y.util/package com.order.demo.adapter.observability/' order-adapter/src/main/java/com/order/demo/adapter/observability/TracerHelper.java
 ```
 
 - [ ] **Step 3: 更新父 POM**

@@ -59,7 +59,7 @@ observable-microservice/
 ├── order-application/        # 纯领域层：业务逻辑、端口接口、Saga
 ├── order-adapter/            # 适配器层：REST、HTTP 客户端、JPA、Kafka、缓存
 ├── order-infrastructure/     # 基础设施入口：Spring Boot、OTel 配置、Flyway
-├── order-o11y/               # OpenTelemetry 工具类（TracerHelper）
+├── (removed, merged into order-adapter)/               # OpenTelemetry 工具类（TracerHelper）
 ├── bdd-specs/                # Cucumber BDD 测试
 └── o11y-kit/                 # 抽离的可观测性 SDK
 ```
@@ -67,13 +67,13 @@ observable-microservice/
 ### 3.2 依赖方向（必须遵守）
 
 ```text
-order-infrastructure → order-adapter → order-application → order-o11y
+order-infrastructure → order-adapter → order-application → (removed, merged into order-adapter)
                                     ↘                    ↗
                                      o11y-kit（通过 starter 引入）
 ```
 
 - **`order-application`** 不依赖任何其他模块，也不依赖 Spring 框架（除 `spring-tx`、`spring-context`、`jakarta.validation` 外）。
-- **`order-adapter`** 依赖 `order-application` 和 `order-o11y`，并通过 `o11y-kit-spring-boot-starter` 引入可观测能力。
+- **`order-adapter`** 依赖 `order-application` 和 `(removed, merged into order-adapter)`，并通过 `o11y-kit-spring-boot-starter` 引入可观测能力。
 - **`order-infrastructure`** 依赖 `order-adapter`，负责启动 Spring Boot 和装配 Bean。
 
 ### 3.3 ArchUnit 强制规则
@@ -103,16 +103,16 @@ order-infrastructure/src/test/java/com/example/order/infrastructure/Architecture
 
 | 职责 | 包路径 |
 |------|--------|
-| 入站端口 | `com.example.order.application.port.in.*` |
-| 出站端口 | `com.example.order.application.port.out.*` |
-| 领域模型/事件 | `com.example.order.application.domain.*` |
-| Saga / 用例 | `com.example.order.application.service.*` |
-| REST 控制器 | `com.example.order.adapter.inbound.rest.*` |
-| HTTP 出站适配器 | `com.example.order.adapter.outbound.inventory/wms/tms.*` |
-| JPA 适配器 | `com.example.order.adapter.outbound.persistence.*` |
-| 缓存适配器 | `com.example.order.adapter.outbound.cache.*` |
-| 配置 / 指标 | `com.example.order.adapter.config.*`、`com.example.order.adapter.metrics.*` |
-| 基础设施入口 | `com.example.order.infrastructure.*` |
+| 入站端口 | `com.order.demo.application.port.in.*` |
+| 出站端口 | `com.order.demo.application.port.out.*` |
+| 领域模型/事件 | `com.order.demo.application.domain.*` |
+| Saga / 用例 | `com.order.demo.application.service.*` |
+| REST 控制器 | `com.order.demo.adapter.inbound.rest.*` |
+| HTTP 出站适配器 | `com.order.demo.adapter.outbound.inventory/wms/tms.*` |
+| JPA 适配器 | `com.order.demo.adapter.outbound.persistence.*` |
+| 缓存适配器 | `com.order.demo.adapter.outbound.cache.*` |
+| 配置 / 指标 | `com.order.demo.adapter.config.*`、`com.order.demo.adapter.metrics.*` |
+| 基础设施入口 | `com.order.demo.infrastructure.*` |
 
 ### 4.2 端口与适配器示例
 

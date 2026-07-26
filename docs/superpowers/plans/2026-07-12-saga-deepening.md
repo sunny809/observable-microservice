@@ -90,7 +90,7 @@ git commit -m "feat(saga): add saga_logs extension and compensation_logs migrati
 
 ```java
 // order-application/src/main/java/com/example/order/application/port/out/SagaLogPort.java
-package com.example.order.application.port.out;
+package com.order.demo.application.port.out;
 
 import java.util.List;
 
@@ -121,7 +121,7 @@ public interface SagaLogPort {
 
 ```java
 // order-application/src/main/java/com/example/order/application/port/out/SagaLogEntry.java
-package com.example.order.application.port.out;
+package com.order.demo.application.port.out;
 
 import java.time.LocalDateTime;
 
@@ -139,7 +139,7 @@ public record SagaLogEntry(
 
 ```java
 // order-adapter/src/main/java/com/example/order/adapter/outbound/persistence/SagaLogEntity.java
-package com.example.order.adapter.outbound.persistence;
+package com.order.demo.adapter.outbound.persistence;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -240,7 +240,7 @@ git commit -m "feat(saga): extend SagaLogPort and SagaLogEntity for state tracki
 
 ```java
 // order-application/src/main/java/com/example/order/application/port/out/CompensationLogPort.java
-package com.example.order.application.port.out;
+package com.order.demo.application.port.out;
 
 public interface CompensationLogPort {
     boolean exists(String idempotencyKey);
@@ -254,7 +254,7 @@ public interface CompensationLogPort {
 
 ```java
 // order-application/src/main/java/com/example/order/application/port/out/CompensationStatus.java
-package com.example.order.application.port.out;
+package com.order.demo.application.port.out;
 
 public enum CompensationStatus {
     COMPLETED, FAILED
@@ -265,7 +265,7 @@ public enum CompensationStatus {
 
 ```java
 // order-adapter/src/main/java/com/example/order/adapter/outbound/persistence/CompensationLogEntity.java
-package com.example.order.adapter.outbound.persistence;
+package com.order.demo.adapter.outbound.persistence;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -324,7 +324,7 @@ public class CompensationLogEntity {
 
 ```java
 // order-adapter/src/main/java/com/example/order/adapter/outbound/persistence/CompensationLogJpaRepository.java
-package com.example.order.adapter.outbound.persistence;
+package com.order.demo.adapter.outbound.persistence;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -336,10 +336,10 @@ public interface CompensationLogJpaRepository extends JpaRepository<Compensation
 
 ```java
 // order-adapter/src/main/java/com/example/order/adapter/outbound/persistence/CompensationLogPersistenceAdapter.java
-package com.example.order.adapter.outbound.persistence;
+package com.order.demo.adapter.outbound.persistence;
 
-import com.example.order.application.port.out.CompensationLogPort;
-import com.example.order.application.port.out.CompensationStatus;
+import com.order.demo.application.port.out.CompensationLogPort;
+import com.order.demo.application.port.out.CompensationStatus;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -391,7 +391,7 @@ git commit -m "feat(saga): add CompensationLogPort and persistence adapter"
 
 ```java
 // order-adapter/src/main/java/com/example/order/adapter/outbound/persistence/SagaLogJpaRepository.java
-package com.example.order.adapter.outbound.persistence;
+package com.order.demo.adapter.outbound.persistence;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -410,10 +410,10 @@ public interface SagaLogJpaRepository extends JpaRepository<SagaLogEntity, Long>
 
 ```java
 // order-adapter/src/main/java/com/example/order/adapter/outbound/persistence/SagaLogPersistenceAdapter.java
-package com.example.order.adapter.outbound.persistence;
+package com.order.demo.adapter.outbound.persistence;
 
-import com.example.order.application.port.out.SagaLogPort;
-import com.example.order.application.port.out.SagaLogEntry;
+import com.order.demo.application.port.out.SagaLogPort;
+import com.order.demo.application.port.out.SagaLogEntry;
 import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -559,7 +559,7 @@ git commit -m "feat(saga): update SagaLogPersistenceAdapter with state tracking 
 
 ```java
 // order-application/src/main/java/com/example/order/application/domain/SagaCompensationRequiredEvent.java
-package com.example.order.application.domain;
+package com.order.demo.application.domain;
 
 import java.util.List;
 
@@ -587,12 +587,12 @@ public class SagaCompensationRequiredEvent {
 
 ```java
 // order-application/src/main/java/com/example/order/application/service/SagaTimeoutDetector.java
-package com.example.order.application.service;
+package com.order.demo.application.service;
 
-import com.example.order.application.domain.SagaCompensationRequiredEvent;
-import com.example.order.application.port.out.DomainEventPublisher;
-import com.example.order.application.port.out.SagaLogPort;
-import com.example.order.application.port.out.SagaLogEntry;
+import com.order.demo.application.domain.SagaCompensationRequiredEvent;
+import com.order.demo.application.port.out.DomainEventPublisher;
+import com.order.demo.application.port.out.SagaLogPort;
+import com.order.demo.application.port.out.SagaLogEntry;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -789,11 +789,11 @@ git commit -m "feat(saga): add saga timeout configuration and enable scheduling"
 
 ```java
 // order-application/src/test/java/com/example/order/application/service/SagaTimeoutDetectorTest.java
-package com.example.order.application.service;
+package com.order.demo.application.service;
 
-import com.example.order.application.port.out.DomainEventPublisher;
-import com.example.order.application.port.out.SagaLogPort;
-import com.example.order.application.port.out.SagaLogEntry;
+import com.order.demo.application.port.out.DomainEventPublisher;
+import com.order.demo.application.port.out.SagaLogPort;
+import com.order.demo.application.port.out.SagaLogEntry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

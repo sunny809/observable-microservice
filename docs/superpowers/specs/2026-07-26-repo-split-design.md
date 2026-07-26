@@ -65,7 +65,7 @@ order-o11y/src/main/java/.../o11y/util/TracerHelper.java
 
 ### 2.2 包名变更
 
-`com.example.order` → `com.order.demo`
+`com.order.demo` → `com.order.demo`
 
 涉及所有 Java 源文件、测试文件、pom.xml、application.yml、properties 文件中的包名和坐标。
 
@@ -145,7 +145,7 @@ Java 25 + Maven 构建，测试 o11y-kit-core 和 starter 模块。
 
 | 步骤 | 内容 | 涉及 |
 |------|------|------|
-| 1 | 包名替换：`com.example.order` → `com.order.demo` | order-demo 全项目 |
+| 1 | 包名替换：`com.order.demo` → `com.order.demo` | order-demo 全项目 |
 | 2 | 删除 order-o11y 模块，合并 TracerHelper | order-demo |
 | 3 | 创建 o11y-kit 独立 repo，复制代码 | 新仓库 |
 | 4 | 从 order-demo 删除 o11y-kit/ 目录 | order-demo |

@@ -16,12 +16,12 @@
 
 ```
 o11y-kit/
-├── o11y-kit-api                         # 纯接口
-├── o11y-kit-micrometer                  # Micrometer 实现
-├── o11y-kit-spring-webmvc              # WebMVC 观测
-├── o11y-kit-spring-webflux             # WebFlux 观测
-├── o11y-kit-spring-aop                 # @Observed 切面
-├── o11y-kit-spring-boot-autoconfigure  # 自动配置
+├── o11y-kit-core                         # 纯接口
+├── o11y-kit-core                  # Micrometer 实现
+├── o11y-kit-core              # WebMVC 观测
+├── o11y-kit-core             # WebFlux 观测
+├── o11y-kit-core                 # @Observed 切面
+├── o11y-kit-spring-boot-starter  # 自动配置
 ├── o11y-kit-spring-boot-starter        # 启动器
 └── o11y-kit-test                       # 测试工具
 ```

@@ -37,9 +37,9 @@
 - Create: `o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/micrometer/MicrometerHttpMetricRecorderTest.java` (moved from micrometer)
 - Create: `o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/spring/aop/ObservedAspectTest.java` (moved from aop)
 - Modify: `o11y-kit/pom.xml` (更新 modules 列表，添加 core，移除旧模块)
-- Delete: `o11y-kit/o11y-kit-api/` (整个目录)
-- Delete: `o11y-kit/o11y-kit-micrometer/` (整个目录)
-- Delete: `o11y-kit/o11y-kit-spring-aop/` (整个目录)
+- Delete: `o11y-kit/o11y-kit-core/` (整个目录)
+- Delete: `o11y-kit/o11y-kit-core/` (整个目录)
+- Delete: `o11y-kit/o11y-kit-core/` (整个目录)
 
 **Interfaces:**
 - Consumes: 无
@@ -130,24 +130,24 @@ mkdir -p o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/{http,micrometer,sprin
 - [ ] **Step 3: 复制所有 Java 源文件到 o11y-kit-core**
 
 复制以下文件（保持包路径不变）：
-- `o11y-kit-api/src/main/java/io/o11y/kit/http/*.java` → `o11y-kit-core/src/main/java/io/o11y/kit/http/`
-- `o11y-kit-micrometer/src/main/java/io/o11y/kit/micrometer/*.java` → `o11y-kit-core/src/main/java/io/o11y/kit/micrometer/`
-- `o11y-kit-spring-aop/src/main/java/io/o11y/kit/spring/aop/*.java` → `o11y-kit-core/src/main/java/io/o11y/kit/spring/aop/`
+- `o11y-kit-core/src/main/java/io/o11y/kit/http/*.java` → `o11y-kit-core/src/main/java/io/o11y/kit/http/`
+- `o11y-kit-core/src/main/java/io/o11y/kit/micrometer/*.java` → `o11y-kit-core/src/main/java/io/o11y/kit/micrometer/`
+- `o11y-kit-core/src/main/java/io/o11y/kit/spring/aop/*.java` → `o11y-kit-core/src/main/java/io/o11y/kit/spring/aop/`
 - 以及对应的 test 文件
 
 ```bash
-cp -r o11y-kit/o11y-kit-api/src/main/java/io/o11y/kit/http/*.java o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/http/
-cp -r o11y-kit/o11y-kit-api/src/test/java/io/o11y/kit/http/*.java o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/http/
-cp -r o11y-kit/o11y-kit-micrometer/src/main/java/io/o11y/kit/micrometer/*.java o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/micrometer/
-cp -r o11y-kit/o11y-kit-micrometer/src/test/java/io/o11y/kit/micrometer/*.java o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/micrometer/
-cp -r o11y-kit/o11y-kit-spring-aop/src/main/java/io/o11y/kit/spring/aop/*.java o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/spring/aop/
-cp -r o11y-kit/o11y-kit-spring-aop/src/test/java/io/o11y/kit/spring/aop/*.java o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/spring/aop/
+cp -r o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/http/*.java o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/http/
+cp -r o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/http/*.java o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/http/
+cp -r o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/micrometer/*.java o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/micrometer/
+cp -r o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/micrometer/*.java o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/micrometer/
+cp -r o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/spring/aop/*.java o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/spring/aop/
+cp -r o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/spring/aop/*.java o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/spring/aop/
 ```
 
 - [ ] **Step 4: 更新 o11y-kit/pom.xml（父 POM）**
 
 将 `<version>` 从 `0.4.0-beta` 改为 `0.5.0`。
-更新 `<modules>` 列表，添加 `o11y-kit-core`，移除 `o11y-kit-api`、`o11y-kit-micrometer`、`o11y-kit-spring-aop`。
+更新 `<modules>` 列表，添加 `o11y-kit-core`，移除 `o11y-kit-core`、`o11y-kit-core`、`o11y-kit-core`。
 更新 `<dependencyManagement>`，将旧模块引用替换为 `o11y-kit-core`。
 
 - [ ] **Step 5: 验证编译**
@@ -169,9 +169,9 @@ Expected: 所有测试通过
 - [ ] **Step 7: 删除旧模块目录**
 
 ```bash
-rm -rf o11y-kit/o11y-kit-api
-rm -rf o11y-kit/o11y-kit-micrometer
-rm -rf o11y-kit/o11y-kit-spring-aop
+rm -rf o11y-kit/o11y-kit-core
+rm -rf o11y-kit/o11y-kit-core
+rm -rf o11y-kit/o11y-kit-core
 ```
 
 - [ ] **Step 8: Commit**
@@ -194,8 +194,8 @@ git commit -m "refactor(o11y-kit): consolidate api+micrometer+aop into core modu
 - Create: `o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/webflux/ClientObservationHandler.java` (moved from webflux)
 - Create: 对应的 test 文件
 - Modify: `o11y-kit/pom.xml` (移除 webmvc 和 webflux 模块引用)
-- Delete: `o11y-kit/o11y-kit-spring-webmvc/` (整个目录)
-- Delete: `o11y-kit/o11y-kit-spring-webflux/` (整个目录)
+- Delete: `o11y-kit/o11y-kit-core/` (整个目录)
+- Delete: `o11y-kit/o11y-kit-core/` (整个目录)
 
 **Interfaces:**
 - Consumes: Task 1 产出的 o11y-kit-core
@@ -208,13 +208,13 @@ mkdir -p o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/webmvc/client
 mkdir -p o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/webflux
 mkdir -p o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/webmvc/client
 mkdir -p o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/webflux
-cp -r o11y-kit/o11y-kit-spring-webmvc/src/main/java/io/o11y/kit/spring/webmvc/*.java o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/webmvc/
-cp -r o11y-kit/o11y-kit-spring-webmvc/src/main/java/io/o11y/kit/spring/webmvc/client/*.java o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/webmvc/client/
-cp -r o11y-kit/o11y-kit-spring-webflux/src/main/java/io/o11y/kit/spring/webflux/*.java o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/webflux/
+cp -r o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/spring/webmvc/*.java o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/webmvc/
+cp -r o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/spring/webmvc/client/*.java o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/webmvc/client/
+cp -r o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/spring/webflux/*.java o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/webflux/
 # 复制测试文件
-cp -r o11y-kit/o11y-kit-spring-webmvc/src/test/java/io/o11y/kit/spring/webmvc/*.java o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/webmvc/
-cp -r o11y-kit/o11y-kit-spring-webmvc/src/test/java/io/o11y/kit/spring/webmvc/client/*.java o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/webmvc/client/
-cp -r o11y-kit/o11y-kit-spring-webflux/src/test/java/io/o11y/kit/spring/webflux/*.java o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/webflux/
+cp -r o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/spring/webmvc/*.java o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/webmvc/
+cp -r o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/spring/webmvc/client/*.java o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/webmvc/client/
+cp -r o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/spring/webflux/*.java o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/webflux/
 ```
 
 - [ ] **Step 2: 更新文件中的 package 声明**
@@ -231,14 +231,14 @@ sed -i 's/package io.o11y.kit.spring.webmvc.client/package io.o11y.kit.webmvc.cl
 sed -i 's/package io.o11y.kit.spring.webflux/package io.o11y.kit.webflux/g' o11y-kit/o11y-kit-core/src/test/java/io/o11y/kit/webflux/*.java
 ```
 
-更新 webmvc 文件中的 import 语句（引用 o11y-kit-api 的类路径不变，不需要修改）：
+更新 webmvc 文件中的 import 语句（引用 o11y-kit-core 的类路径不变，不需要修改）：
 ```bash
 sed -i 's/import io.o11y.kit.spring.aop/import io.o11y.kit.spring.aop/g' o11y-kit/o11y-kit-core/src/main/java/io/o11y/kit/webmvc/*.java
 ```
 
 - [ ] **Step 3: 更新父 POM**
 
-更新 `o11y-kit/pom.xml`，从 `<modules>` 中移除 `o11y-kit-spring-webmvc` 和 `o11y-kit-spring-webflux`。
+更新 `o11y-kit/pom.xml`，从 `<modules>` 中移除 `o11y-kit-core` 和 `o11y-kit-core`。
 从 `<dependencyManagement>` 中移除这两个模块的引用。
 
 - [ ] **Step 4: 验证编译**
@@ -260,8 +260,8 @@ Expected: 所有测试通过
 - [ ] **Step 6: 删除旧模块目录**
 
 ```bash
-rm -rf o11y-kit/o11y-kit-spring-webmvc
-rm -rf o11y-kit/o11y-kit-spring-webflux
+rm -rf o11y-kit/o11y-kit-core
+rm -rf o11y-kit/o11y-kit-core
 ```
 
 - [ ] **Step 7: Commit**
@@ -285,7 +285,7 @@ git commit -m "refactor(o11y-kit): merge webmvc and webflux into core module"
 - Create: `o11y-kit/o11y-kit-spring-boot-starter/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` (moved from autoconfigure)
 - Create: 对应的 test 文件
 - Modify: `o11y-kit/pom.xml` (移除 autoconfigure 模块引用)
-- Delete: `o11y-kit/o11y-kit-spring-boot-autoconfigure/` (整个目录)
+- Delete: `o11y-kit/o11y-kit-spring-boot-starter/` (整个目录)
 
 - [ ] **Step 1: 复制 autoconfigure 代码到 starter**
 
@@ -293,14 +293,14 @@ git commit -m "refactor(o11y-kit): merge webmvc and webflux into core module"
 mkdir -p o11y-kit/o11y-kit-spring-boot-starter/src/main/java/io/o11y/kit/autoconfigure
 mkdir -p o11y-kit/o11y-kit-spring-boot-starter/src/main/resources/META-INF/spring
 mkdir -p o11y-kit/o11y-kit-spring-boot-starter/src/test/java/io/o11y/kit/autoconfigure
-cp -r o11y-kit/o11y-kit-spring-boot-autoconfigure/src/main/java/io/o11y/kit/autoconfigure/*.java o11y-kit/o11y-kit-spring-boot-starter/src/main/java/io/o11y/kit/autoconfigure/
-cp -r o11y-kit/o11y-kit-spring-boot-autoconfigure/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports o11y-kit/o11y-kit-spring-boot-starter/src/main/resources/META-INF/spring/
-cp -r o11y-kit/o11y-kit-spring-boot-autoconfigure/src/test/java/io/o11y/kit/autoconfigure/*.java o11y-kit/o11y-kit-spring-boot-starter/src/test/java/io/o11y/kit/autoconfigure/
+cp -r o11y-kit/o11y-kit-spring-boot-starter/src/main/java/io/o11y/kit/autoconfigure/*.java o11y-kit/o11y-kit-spring-boot-starter/src/main/java/io/o11y/kit/autoconfigure/
+cp -r o11y-kit/o11y-kit-spring-boot-starter/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports o11y-kit/o11y-kit-spring-boot-starter/src/main/resources/META-INF/spring/
+cp -r o11y-kit/o11y-kit-spring-boot-starter/src/test/java/io/o11y/kit/autoconfigure/*.java o11y-kit/o11y-kit-spring-boot-starter/src/test/java/io/o11y/kit/autoconfigure/
 ```
 
 - [ ] **Step 2: 更新 starter/pom.xml**
 
-添加 `o11y-kit-core` 依赖（替换旧的 `o11y-kit-api` 依赖），保留所有 autoconfigure 需要的依赖：
+添加 `o11y-kit-core` 依赖（替换旧的 `o11y-kit-core` 依赖），保留所有 autoconfigure 需要的依赖：
 
 ```xml
 <dependencies>
@@ -341,7 +341,7 @@ cp -r o11y-kit/o11y-kit-spring-boot-autoconfigure/src/test/java/io/o11y/kit/auto
 
 - [ ] **Step 3: 更新父 POM**
 
-更新 `o11y-kit/pom.xml`，从 `<modules>` 中移除 `o11y-kit-spring-boot-autoconfigure`。
+更新 `o11y-kit/pom.xml`，从 `<modules>` 中移除 `o11y-kit-spring-boot-starter`。
 从 `<dependencyManagement>` 中移除 autoconfigure 模块引用。
 
 - [ ] **Step 4: 验证编译**
@@ -363,7 +363,7 @@ Expected: 所有测试通过
 - [ ] **Step 6: 删除旧模块目录**
 
 ```bash
-rm -rf o11y-kit/o11y-kit-spring-boot-autoconfigure
+rm -rf o11y-kit/o11y-kit-spring-boot-starter
 ```
 
 - [ ] **Step 7: Commit**
@@ -611,13 +611,13 @@ git commit -m "feat(o11y-kit): add BusinessMetricsPort SPI and Micrometer adapte
 
 - [ ] **Step 1: 更新 order-demo 父 POM**
 
-将 `o11y-kit-api` 依赖引用替换为 `o11y-kit-core`：
+将 `o11y-kit-core` 依赖引用替换为 `o11y-kit-core`：
 
 ```xml
 <!-- 替换前 -->
 <dependency>
     <groupId>io.o11y.kit</groupId>
-    <artifactId>o11y-kit-api</artifactId>
+    <artifactId>o11y-kit-core</artifactId>
     <version>0.5.0</version>
 </dependency>
 
@@ -633,9 +633,9 @@ git commit -m "feat(o11y-kit): add BusinessMetricsPort SPI and Micrometer adapte
 
 ```java
 // order-adapter/src/main/java/com/example/order/adapter/metrics/OrderMetrics.java
-package com.example.order.adapter.metrics;
+package com.order.demo.adapter.metrics;
 
-import com.example.order.application.port.out.MetricsPort;
+import com.order.demo.application.port.out.MetricsPort;
 import io.o11y.kit.metrics.BusinessMetricsPort;
 import org.springframework.stereotype.Component;
 

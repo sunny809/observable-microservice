@@ -401,7 +401,7 @@ git commit -m "feat(persistence): add reservation_ids TEXT column for saga data
 - [ ] **Step 1: Create `OrderNotFoundException.java`**
 
 ```java
-package com.example.order.adapter.inbound.rest;
+package com.order.demo.adapter.inbound.rest;
 
 public class OrderNotFoundException extends RuntimeException {
     public OrderNotFoundException(String orderId) {
@@ -413,7 +413,7 @@ public class OrderNotFoundException extends RuntimeException {
 - [ ] **Step 2: Create `WmsCallbackRequest.java`**
 
 ```java
-package com.example.order.adapter.inbound.rest;
+package com.order.demo.adapter.inbound.rest;
 
 import jakarta.validation.constraints.NotBlank;
 
@@ -429,15 +429,15 @@ public class WmsCallbackRequest {
 - [ ] **Step 3: Create `WmsCallbackController.java`**
 
 ```java
-package com.example.order.adapter.inbound.rest;
+package com.order.demo.adapter.inbound.rest;
 
-import com.example.order.application.domain.InventoryReservation;
-import com.example.order.application.domain.Order;
-import com.example.order.application.domain.OrderStatus;
-import com.example.order.application.domain.WmsPickingCompletedEvent;
-import com.example.order.application.port.in.OrderItem;
-import com.example.order.application.port.out.DomainEventPublisher;
-import com.example.order.application.port.out.OrderRepositoryPort;
+import com.order.demo.application.domain.InventoryReservation;
+import com.order.demo.application.domain.Order;
+import com.order.demo.application.domain.OrderStatus;
+import com.order.demo.application.domain.WmsPickingCompletedEvent;
+import com.order.demo.application.port.in.OrderItem;
+import com.order.demo.application.port.out.DomainEventPublisher;
+import com.order.demo.application.port.out.OrderRepositoryPort;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
@@ -509,15 +509,15 @@ public class WmsCallbackController {
 - [ ] **Step 4: Create `WmsCallbackControllerTest.java`**
 
 ```java
-package com.example.order.adapter.inbound.rest;
+package com.order.demo.adapter.inbound.rest;
 
-import com.example.order.application.domain.InventoryReservation;
-import com.example.order.application.domain.Order;
-import com.example.order.application.domain.OrderStatus;
-import com.example.order.application.domain.WmsPickingCompletedEvent;
-import com.example.order.application.port.in.OrderItem;
-import com.example.order.application.port.out.DomainEventPublisher;
-import com.example.order.application.port.out.OrderRepositoryPort;
+import com.order.demo.application.domain.InventoryReservation;
+import com.order.demo.application.domain.Order;
+import com.order.demo.application.domain.OrderStatus;
+import com.order.demo.application.domain.WmsPickingCompletedEvent;
+import com.order.demo.application.port.in.OrderItem;
+import com.order.demo.application.port.out.DomainEventPublisher;
+import com.order.demo.application.port.out.OrderRepositoryPort;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;

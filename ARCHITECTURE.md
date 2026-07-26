@@ -38,7 +38,7 @@ This is a **hexagonal architecture** (ports and adapters) Spring Boot order serv
 | `order-application` | Core domain logic and use cases (no framework dependencies) |
 | `order-adapter` | REST controllers, outbound adapters (HTTP, JPA, Kafka), inbound ports implementation |
 | `order-infrastructure` | Spring Boot application entry point, OpenTelemetry config, persistence |
-| `order-o11y` | OpenTelemetry utilities (tracer helper) |
+| `(removed, merged into order-adapter)` | OpenTelemetry utilities (tracer helper) |
 | `bdd-specs` | Cucumber BDD tests with WireMock for service virtualization |
 
 ### Domain Model
@@ -58,7 +58,7 @@ This is a **hexagonal architecture** (ports and adapters) Spring Boot order serv
 ### Dependency Flow
 
 ```text
-order-infrastructure → order-adapter → order-application → order-o11y
+order-infrastructure → order-adapter → order-application → (removed, merged into order-adapter)
                                      ↘                    ↗
                                     o11y-kit (extracted SDK)
 ```
@@ -136,7 +136,7 @@ order-infrastructure → order-adapter → order-application → order-o11y
 
 **Context:** The observability interceptor code (metrics recording, trace ID resolution, span management) was initially inline in the order-adapter module. As the patterns matured, they became reusable across projects.
 
-**Decision:** Extract the observability infrastructure into a separate multi-module SDK (`o11y-kit/`) with its own build lifecycle, versioning, and documentation. The blueprint consumes it as a dependency.
+**Decision:** Extract the observability infrastructure into a separate multi-module SDK (`(external dependency)`) with its own build lifecycle, versioning, and documentation. The blueprint consumes it as a dependency.
 
 **Consequences:**
 

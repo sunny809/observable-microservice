@@ -12,4 +12,4 @@ Core domain logic and use cases. Contains no framework dependencies.
 
 ## Dependencies
 
-- `order-o11y` (OpenTelemetry utilities)
+- `(removed, merged into order-adapter)` (OpenTelemetry utilities)

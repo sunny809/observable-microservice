@@ -13,4 +13,4 @@ REST controllers, outbound adapters (HTTP, JPA), and inbound ports implementatio
 ## Dependencies
 
 - `order-application`
-- `order-o11y`
+- `(removed, merged into order-adapter)`

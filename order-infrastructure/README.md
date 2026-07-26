@@ -11,4 +11,4 @@ Spring Boot application entry point, OpenTelemetry configuration, and framework-
 ## Dependencies
 
 - `order-adapter`
-- `order-o11y`
+- `(removed, merged into order-adapter)`

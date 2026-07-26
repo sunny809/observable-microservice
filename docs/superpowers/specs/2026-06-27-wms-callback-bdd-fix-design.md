@@ -126,7 +126,7 @@ List<String> allReservationIds = deserializeReservationIds(entity.getReservation
 
 ### 5. 新增 Controller — `WmsCallbackController.java`
 
-**包路径:** `com.example.order.adapter.inbound.rest`
+**包路径:** `com.order.demo.adapter.inbound.rest`
 
 ```java
 @RestController
@@ -183,7 +183,7 @@ public class WmsCallbackController {
 ### 6. 新增 DTO — `WmsCallbackRequest.java`
 
 ```java
-package com.example.order.adapter.inbound.rest;
+package com.order.demo.adapter.inbound.rest;
 
 import jakarta.validation.constraints.NotBlank;
 
@@ -199,7 +199,7 @@ public class WmsCallbackRequest {
 ### 7. 新增异常 — `OrderNotFoundException.java`
 
 ```java
-package com.example.order.adapter.inbound.rest;
+package com.order.demo.adapter.inbound.rest;
 
 public class OrderNotFoundException extends RuntimeException {
     public OrderNotFoundException(String orderId) {

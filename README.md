@@ -22,7 +22,7 @@
 | **Tracing** | OpenTelemetry + Jaeger | End-to-end trace IDs via W3C `traceparent` / B3 propagation, visualized in Jaeger |
 | **Logging** | Logstash + MDC | Structured JSON logs with `traceId`, `service`, `version` in every log line |
 
-All HTTP traffic — inbound controllers and outbound WebClient/RestTemplate calls — is automatically instrumented via [o11y-kit](o11y-kit/), a lightweight Spring HTTP observability SDK extracted from this project.
+All HTTP traffic — inbound controllers and outbound WebClient/RestTemplate calls — is automatically instrumented via [o11y-kit](https://github.com/sunny809/o11y-kit), a lightweight Spring HTTP observability SDK.
 
 ### 🏛️ Hexagonal Architecture
 
@@ -49,8 +49,7 @@ graph TB
         SAGA[Saga Orchestrator]
         PORT[Port Interfaces]
     end
-    subgraph O11y["o11y-kit"]
-        API[o11y-kit-api]
+    subgraph O11y["o11y-kit (external dependency)"]
         OBS[Observation Handlers]
     end
     Infrastructure --> Adapter
@@ -198,15 +197,6 @@ observable-microservice/
 │   ├── metrics/              # Custom Micrometer metrics
 │   └── health/               # Service health indicators
 ├── order-infrastructure/     # Spring Boot entry, persistence, config
-├── order-o11y/               # OpenTelemetry utilities (legacy)
-├── o11y-kit/                 # Extracted observability SDK
-│   ├── o11y-kit-api/
-│   ├── o11y-kit-micrometer/
-│   ├── o11y-kit-spring-webmvc/
-│   ├── o11y-kit-spring-webflux/
-│   ├── o11y-kit-spring-boot-autoconfigure/
-│   ├── o11y-kit-spring-boot-starter/
-│   └── o11y-kit-test/
 ├── bdd-specs/                # Cucumber BDD tests
 ├── k8s/                      # Kubernetes manifests
 ├── helm/                     # Helm charts

@@ -18,7 +18,6 @@ jobs:
             !docs/RESUME_GUIDE.md
             !docs/SPEC.md
             docs/**/*.md
-            o11y-kit/**/*.md
 
   yaml-lint:
     runs-on: ubuntu-latest

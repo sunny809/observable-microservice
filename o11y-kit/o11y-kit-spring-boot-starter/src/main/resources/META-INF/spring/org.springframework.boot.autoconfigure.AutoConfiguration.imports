@@ -1,5 +1,4 @@
 io.o11y.kit.autoconfigure.HttpMetricsAutoConfiguration
-io.o11y.kit.autoconfigure.ObservationWebMvcAutoConfiguration
-io.o11y.kit.autoconfigure.ObservationWebFluxAutoConfiguration
+io.o11y.kit.autoconfigure.WebObservationAutoConfiguration
 io.o11y.kit.autoconfigure.HttpClientObservationAutoConfiguration
-io.o11y.kit.spring.aop.ObservedAutoConfiguration
+io.o11y.kit.autoconfigure.ObservedAutoConfiguration

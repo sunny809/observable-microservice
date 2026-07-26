@@ -1,7 +1,6 @@
 package io.o11y.kit.autoconfigure;
 
 import io.o11y.kit.http.HttpMetricRecorder;
-import io.o11y.kit.http.O11yKitOrders;
 import io.o11y.kit.webmvc.client.RestClientObservationInterceptor;
 import io.o11y.kit.webmvc.client.RestTemplateObservationInterceptor;
 import io.opentelemetry.api.trace.Tracer;
@@ -28,7 +27,7 @@ import org.springframework.web.client.RestTemplate;
  * receives the observation interceptor without manual wiring.
  *
  * <p><strong>Ordering:</strong> The customizers are annotated with
- * {@code @Order(O11yKitOrders.CLIENT_OBSERVATION)} so they run after
+ * {@code @Order(CLIENT_OBSERVATION_ORDER)} so they run after
  * user-provided customizers, ensuring the observation interceptor is
  * always appended to the interceptor list.
  *
@@ -56,6 +55,8 @@ import org.springframework.web.client.RestTemplate;
 )
 public class HttpClientObservationAutoConfiguration {
 
+    static final int CLIENT_OBSERVATION_ORDER = Integer.MAX_VALUE - 100;
+
     /**
      * Registers a {@link RestTemplateCustomizer} that adds the
      * {@link RestTemplateObservationInterceptor} to every
@@ -70,7 +71,7 @@ public class HttpClientObservationAutoConfiguration {
      * @return the customizer bean
      */
     @Bean
-    @Order(O11yKitOrders.CLIENT_OBSERVATION)
+    @Order(CLIENT_OBSERVATION_ORDER)
     public RestTemplateCustomizer observationRestTemplateCustomizer(
             HttpMetricRecorder recorder,
             ObjectProvider<Tracer> tracerProvider) {
@@ -99,7 +100,7 @@ public class HttpClientObservationAutoConfiguration {
      * @return the customizer bean
      */
     @Bean
-    @Order(O11yKitOrders.CLIENT_OBSERVATION)
+    @Order(CLIENT_OBSERVATION_ORDER)
     public RestClientCustomizer observationRestClientCustomizer(
             HttpMetricRecorder recorder,
             ObjectProvider<Tracer> tracerProvider) {

@@ -1,6 +1,8 @@
-package io.o11y.kit.spring.aop;
+package io.o11y.kit.autoconfigure;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.o11y.kit.spring.aop.Observed;
+import io.o11y.kit.spring.aop.ObservedAspect;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

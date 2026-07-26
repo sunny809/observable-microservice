@@ -1,4 +1,4 @@
-package com.example.order.o11y.util;
+package com.order.demo.o11y.util;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;

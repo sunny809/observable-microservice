@@ -1,10 +1,10 @@
-package com.example.order.adapter.inbound.rest;
+package com.order.demo.adapter.inbound.rest;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.example.order.application.port.in.OrderItem;
-import com.example.order.application.port.in.PlaceOrderCommand;
+import com.order.demo.application.port.in.OrderItem;
+import com.order.demo.application.port.in.PlaceOrderCommand;
 
 public final class PlaceOrderMapper {
 

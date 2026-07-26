@@ -1,6 +1,6 @@
-package com.example.order.adapter.outbound.wms;
+package com.order.demo.adapter.outbound.wms;
 
-import com.example.order.application.port.out.WmsAck;
+import com.order.demo.application.port.out.WmsAck;
 
 /**
  * Adapter-layer DTO for deserializing WMS API responses.

@@ -1,6 +1,6 @@
-package com.example.order.application.domain;
+package com.order.demo.application.domain;
 
-import com.example.order.application.port.out.WmsShipmentInstruction;
+import com.order.demo.application.port.out.WmsShipmentInstruction;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -8,15 +8,15 @@ import java.util.Objects;
 /**
  * Domain event published when an order requires a WMS shipment instruction.
  *
- * <p>Published by {@link com.example.order.application.service.OrderPlacementSaga}
+ * <p>Published by {@link com.order.demo.application.service.OrderPlacementSaga}
  * after the order transaction commits. Consumed asynchronously by
  * {@code @TransactionalEventListener} to send the instruction to the WMS service
  * without blocking the HTTP response.
  *
  * <p>All fields are immutable (defensive copies are made for collections).
  *
- * @see com.example.order.application.service.OrderPlacementSaga#placeOrder
- * @see com.example.order.application.service.OrderPlacementSaga#onWmsRequired
+ * @see com.order.demo.application.service.OrderPlacementSaga#placeOrder
+ * @see com.order.demo.application.service.OrderPlacementSaga#onWmsRequired
  */
 public class WmsInstructionRequiredEvent {
     private final String orderId;

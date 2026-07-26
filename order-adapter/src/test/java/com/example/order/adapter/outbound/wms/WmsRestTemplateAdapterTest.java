@@ -1,7 +1,7 @@
-package com.example.order.adapter.outbound.wms;
+package com.order.demo.adapter.outbound.wms;
 
-import com.example.order.application.port.out.WmsAck;
-import com.example.order.application.port.out.WmsShipmentInstruction;
+import com.order.demo.application.port.out.WmsAck;
+import com.order.demo.application.port.out.WmsShipmentInstruction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;

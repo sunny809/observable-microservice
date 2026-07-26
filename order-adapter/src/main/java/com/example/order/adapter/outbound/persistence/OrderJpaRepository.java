@@ -1,4 +1,4 @@
-package com.example.order.adapter.outbound.persistence;
+package com.order.demo.adapter.outbound.persistence;
 
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

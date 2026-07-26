@@ -1,6 +1,6 @@
-package com.example.order.adapter.inbound.rest.aop;
+package com.order.demo.adapter.inbound.rest.aop;
 
-import com.example.order.o11y.util.TracerHelper;
+import com.order.demo.o11y.util.TracerHelper;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
@@ -28,7 +28,7 @@ public class TraceAspect {
         this.tracer = tracer;
     }
 
-    @Around("@annotation(com.example.order.adapter.inbound.rest.aop.Traced)")
+    @Around("@annotation(com.order.demo.adapter.inbound.rest.aop.Traced)")
     public Object aroundTracedMethod(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Traced traced = signature.getMethod().getAnnotation(Traced.class);

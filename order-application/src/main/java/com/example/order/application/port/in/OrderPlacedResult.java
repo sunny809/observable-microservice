@@ -1,6 +1,6 @@
-package com.example.order.application.port.in;
+package com.order.demo.application.port.in;
 
-import com.example.order.application.domain.OrderStatus;
+import com.order.demo.application.domain.OrderStatus;
 import java.util.Objects;
 
 public class OrderPlacedResult {

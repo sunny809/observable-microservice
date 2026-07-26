@@ -1,4 +1,4 @@
-package com.example.order.application.domain;
+package com.order.demo.application.domain;
 
 /**
  * Thrown when the inventory service cannot reserve stock for a requested SKU.
@@ -7,7 +7,7 @@ package com.example.order.application.domain;
  * are released before this exception is propagated to the caller.
  * Maps to HTTP 422 Unprocessable Entity in the REST layer.
  *
- * @see com.example.order.application.service.OrderPlacementSaga#reserveAllItems
+ * @see com.order.demo.application.service.OrderPlacementSaga#reserveAllItems
  */
 public class InsufficientInventoryException extends RuntimeException {
     public InsufficientInventoryException(String sku) {

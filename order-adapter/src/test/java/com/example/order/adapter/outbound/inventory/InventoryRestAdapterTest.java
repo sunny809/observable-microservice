@@ -1,11 +1,11 @@
-package com.example.order.adapter.outbound.inventory;
+package com.order.demo.adapter.outbound.inventory;
 
-import com.example.order.adapter.AbstractHttpAdapterTest;
-import com.example.order.adapter.config.WebClientConfig;
-import com.example.order.application.domain.InventoryReservation;
-import com.example.order.application.domain.ReservationStatus;
-import com.example.order.application.port.out.ConfirmReservationCommand;
-import com.example.order.application.port.out.ReservationRequest;
+import com.order.demo.adapter.AbstractHttpAdapterTest;
+import com.order.demo.adapter.config.WebClientConfig;
+import com.order.demo.application.domain.InventoryReservation;
+import com.order.demo.application.domain.ReservationStatus;
+import com.order.demo.application.port.out.ConfirmReservationCommand;
+import com.order.demo.application.port.out.ReservationRequest;
 import okhttp3.mockwebserver.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

@@ -1,7 +1,7 @@
-package com.example.order.specs;
+package com.order.demo.specs;
 
-import com.example.order.infrastructure.OrderServiceApplication;
-import com.example.order.specs.config.BddTestConfig;
+import com.order.demo.infrastructure.OrderServiceApplication;
+import com.order.demo.specs.config.BddTestConfig;
 import io.cucumber.spring.CucumberContextConfiguration;
 import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
 import org.springframework.boot.test.context.SpringBootTest;

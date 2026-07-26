@@ -1,4 +1,4 @@
-package com.example.order.adapter.config;
+package com.order.demo.adapter.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

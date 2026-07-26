@@ -1,4 +1,4 @@
-package com.example.order.application.port.in;
+package com.order.demo.application.port.in;
 
 /**
  * Inbound port for placing orders.
@@ -8,7 +8,7 @@ package com.example.order.application.port.in;
  * orchestrate the distributed transaction across inventory, order persistence,
  * and WMS services.
  *
- * @see com.example.order.application.service.OrderPlacementSaga
+ * @see com.order.demo.application.service.OrderPlacementSaga
  */
 public interface PlaceOrderUseCase {
 
@@ -17,8 +17,8 @@ public interface PlaceOrderUseCase {
      *
      * @param command the place order command containing customer, items, and idempotency key
      * @return the result containing the generated order ID and initial status
-     * @throws com.example.order.application.domain.DuplicateOrderException if the idempotency key already exists
-     * @throws com.example.order.application.domain.InsufficientInventoryException if any item cannot be reserved
+     * @throws com.order.demo.application.domain.DuplicateOrderException if the idempotency key already exists
+     * @throws com.order.demo.application.domain.InsufficientInventoryException if any item cannot be reserved
      */
     OrderPlacedResult placeOrder(PlaceOrderCommand command);
 }

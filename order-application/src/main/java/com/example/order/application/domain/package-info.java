@@ -8,9 +8,9 @@
  *
  * <p>Key classes:
  * <ul>
- *   <li>{@link com.example.order.application.domain.Order} — Aggregate root</li>
- *   <li>{@link com.example.order.application.domain.InventoryReservation} — Value object</li>
- *   <li>{@link com.example.order.application.domain.WmsInstructionRequiredEvent} — Domain event</li>
+ *   <li>{@link com.order.demo.application.domain.Order} — Aggregate root</li>
+ *   <li>{@link com.order.demo.application.domain.InventoryReservation} — Value object</li>
+ *   <li>{@link com.order.demo.application.domain.WmsInstructionRequiredEvent} — Domain event</li>
  * </ul>
  */
-package com.example.order.application.domain;
+package com.order.demo.application.domain;

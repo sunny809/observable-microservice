@@ -1,9 +1,9 @@
-package com.example.order.application.service;
+package com.order.demo.application.service;
 
-import com.example.order.application.domain.SagaCompensationRequiredEvent;
-import com.example.order.application.port.out.DomainEventPublisher;
-import com.example.order.application.port.out.SagaLogEntry;
-import com.example.order.application.port.out.SagaLogPort;
+import com.order.demo.application.domain.SagaCompensationRequiredEvent;
+import com.order.demo.application.port.out.DomainEventPublisher;
+import com.order.demo.application.port.out.SagaLogEntry;
+import com.order.demo.application.port.out.SagaLogPort;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

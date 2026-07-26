@@ -1,6 +1,6 @@
-package com.example.order.application.port.out;
+package com.order.demo.application.port.out;
 
-import com.example.order.application.domain.InventoryReservation;
+import com.order.demo.application.domain.InventoryReservation;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -11,9 +11,9 @@ import java.util.concurrent.CompletableFuture;
  * handle the actual HTTP communication and resilience patterns.
  *
  * <p>All operations return {@link CompletableFuture} for asynchronous composition
- * within the {@link com.example.order.application.service.OrderPlacementSaga}.
+ * within the {@link com.order.demo.application.service.OrderPlacementSaga}.
  *
- * @see com.example.order.adapter.outbound.inventory.InventoryRestAdapter
+ * @see com.order.demo.adapter.outbound.inventory.InventoryRestAdapter
  */
 public interface InventoryPort {
 

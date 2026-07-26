@@ -1,6 +1,6 @@
-package com.example.order.infrastructure.adapter;
+package com.order.demo.infrastructure.adapter;
 
-import com.example.order.application.port.out.DomainEventPublisher;
+import com.order.demo.application.port.out.DomainEventPublisher;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 

@@ -1,4 +1,4 @@
-package com.example.order.adapter.inbound.rest;
+package com.order.demo.adapter.inbound.rest;
 
 import jakarta.validation.constraints.NotBlank;
 

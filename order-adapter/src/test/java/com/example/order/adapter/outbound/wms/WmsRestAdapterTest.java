@@ -1,8 +1,8 @@
-package com.example.order.adapter.outbound.wms;
+package com.order.demo.adapter.outbound.wms;
 
-import com.example.order.adapter.AbstractHttpAdapterTest;
-import com.example.order.application.port.out.WmsAck;
-import com.example.order.application.port.out.WmsShipmentInstruction;
+import com.order.demo.adapter.AbstractHttpAdapterTest;
+import com.order.demo.application.port.out.WmsAck;
+import com.order.demo.application.port.out.WmsShipmentInstruction;
 import okhttp3.mockwebserver.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

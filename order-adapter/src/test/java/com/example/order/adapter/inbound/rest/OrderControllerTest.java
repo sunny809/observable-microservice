@@ -1,4 +1,4 @@
-package com.example.order.adapter.inbound.rest;
+package com.order.demo.adapter.inbound.rest;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -16,9 +16,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import com.example.order.application.domain.OrderStatus;
-import com.example.order.application.port.in.OrderPlacedResult;
-import com.example.order.application.port.in.PlaceOrderUseCase;
+import com.order.demo.application.domain.OrderStatus;
+import com.order.demo.application.port.in.OrderPlacedResult;
+import com.order.demo.application.port.in.PlaceOrderUseCase;
 
 @Tag("unit")
 @Tag("rest-api")

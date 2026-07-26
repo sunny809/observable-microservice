@@ -1,8 +1,8 @@
-package com.example.order.adapter.outbound.tms;
+package com.order.demo.adapter.outbound.tms;
 
-import com.example.order.adapter.AbstractHttpAdapterTest;
-import com.example.order.application.port.out.TmsAck;
-import com.example.order.application.port.out.TmsShipmentInstruction;
+import com.order.demo.adapter.AbstractHttpAdapterTest;
+import com.order.demo.application.port.out.TmsAck;
+import com.order.demo.application.port.out.TmsShipmentInstruction;
 import okhttp3.mockwebserver.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

@@ -1,4 +1,4 @@
-package com.example.order.adapter.outbound.cache;
+package com.order.demo.adapter.outbound.cache;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;

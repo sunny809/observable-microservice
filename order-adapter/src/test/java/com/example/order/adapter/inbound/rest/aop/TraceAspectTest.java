@@ -1,4 +1,4 @@
-package com.example.order.adapter.inbound.rest.aop;
+package com.order.demo.adapter.inbound.rest.aop;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;

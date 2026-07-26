@@ -1,4 +1,4 @@
-package com.example.order.adapter.config;
+package com.order.demo.adapter.config;
 
 import org.junit.jupiter.api.Test;
 

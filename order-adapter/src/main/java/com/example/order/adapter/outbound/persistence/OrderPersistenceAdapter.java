@@ -1,9 +1,9 @@
-package com.example.order.adapter.outbound.persistence;
+package com.order.demo.adapter.outbound.persistence;
 
-import com.example.order.application.domain.Order;
-import com.example.order.application.domain.OrderStatus;
-import com.example.order.application.port.in.OrderItem;
-import com.example.order.application.port.out.OrderRepositoryPort;
+import com.order.demo.application.domain.Order;
+import com.order.demo.application.domain.OrderStatus;
+import com.order.demo.application.port.in.OrderItem;
+import com.order.demo.application.port.out.OrderRepositoryPort;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;

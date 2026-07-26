@@ -1,7 +1,7 @@
-package com.example.order.application.domain;
+package com.order.demo.application.domain;
 
-import com.example.order.application.port.in.OrderItem;
-import com.example.order.application.port.in.PlaceOrderCommand;
+import com.order.demo.application.port.in.OrderItem;
+import com.order.demo.application.port.in.PlaceOrderCommand;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.EnumSet;

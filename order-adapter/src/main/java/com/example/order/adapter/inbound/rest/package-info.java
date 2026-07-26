@@ -6,9 +6,9 @@
  *
  * <p>Key classes:
  * <ul>
- *   <li>{@link com.example.order.adapter.inbound.rest.OrderController} — REST controller</li>
- *   <li>{@link com.example.order.adapter.inbound.rest.PlaceOrderRequest} — Request DTO</li>
- *   <li>{@link com.example.order.adapter.inbound.rest.OrderResponse} — Response DTO</li>
+ *   <li>{@link com.order.demo.adapter.inbound.rest.OrderController} — REST controller</li>
+ *   <li>{@link com.order.demo.adapter.inbound.rest.PlaceOrderRequest} — Request DTO</li>
+ *   <li>{@link com.order.demo.adapter.inbound.rest.OrderResponse} — Response DTO</li>
  * </ul>
  */
-package com.example.order.adapter.inbound.rest;
+package com.order.demo.adapter.inbound.rest;

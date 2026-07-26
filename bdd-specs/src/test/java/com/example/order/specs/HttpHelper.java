@@ -1,4 +1,4 @@
-package com.example.order.specs;
+package com.order.demo.specs;
 
 import java.util.Map;
 import org.springframework.boot.test.web.client.TestRestTemplate;

@@ -1,4 +1,4 @@
-package com.example.order.infrastructure;
+package com.order.demo.infrastructure;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -7,9 +7,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication(scanBasePackages = "com.example.order")
-@EntityScan(basePackages = "com.example.order.adapter.outbound.persistence")
-@EnableJpaRepositories(basePackages = "com.example.order.adapter.outbound.persistence")
+@SpringBootApplication(scanBasePackages = "com.order.demo")
+@EntityScan(basePackages = "com.order.demo.adapter.outbound.persistence")
+@EnableJpaRepositories(basePackages = "com.order.demo.adapter.outbound.persistence")
 @EnableScheduling
 public class OrderServiceApplication {
     public static void main(String[] args) {

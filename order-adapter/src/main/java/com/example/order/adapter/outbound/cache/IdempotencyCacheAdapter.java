@@ -1,6 +1,6 @@
-package com.example.order.adapter.outbound.cache;
+package com.order.demo.adapter.outbound.cache;
 
-import com.example.order.application.port.out.IdempotencyCachePort;
+import com.order.demo.application.port.out.IdempotencyCachePort;
 import org.springframework.stereotype.Component;
 
 /**

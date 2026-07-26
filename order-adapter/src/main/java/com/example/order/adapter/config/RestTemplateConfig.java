@@ -1,4 +1,4 @@
-package com.example.order.adapter.config;
+package com.order.demo.adapter.config;
 
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
@@ -18,7 +18,7 @@ import org.springframework.web.client.RestTemplate;
  * <p>This demonstrates the sync client observation path in o11y-kit, complementing
  * the existing WebClient-based adapters that use the WebFlux observation handler.
  *
- * @see com.example.order.adapter.outbound.wms.WmsRestTemplateAdapter
+ * @see com.order.demo.adapter.outbound.wms.WmsRestTemplateAdapter
  * @see io.o11y.kit.autoconfigure.HttpClientObservationAutoConfiguration
  */
 @Configuration

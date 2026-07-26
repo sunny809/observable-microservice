@@ -1,4 +1,4 @@
-package com.example.order.infrastructure;
+package com.order.demo.infrastructure;
 
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -10,7 +10,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
-@AnalyzeClasses(packages = "com.example.order")
+@AnalyzeClasses(packages = "com.order.demo")
 public class ArchitectureTest {
 
     @ArchTest
@@ -57,6 +57,6 @@ public class ArchitectureTest {
 
     @ArchTest
     static final ArchRule no_cyclic_dependencies =
-            slices().matching("com.example.order.(*)..")
+            slices().matching("com.order.demo.(*)..")
                     .should().beFreeOfCycles();
 }

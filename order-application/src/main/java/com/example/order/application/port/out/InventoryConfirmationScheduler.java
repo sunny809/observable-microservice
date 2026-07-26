@@ -1,6 +1,6 @@
-package com.example.order.application.port.out;
+package com.order.demo.application.port.out;
 
-import com.example.order.application.domain.InventoryReservation;
+import com.order.demo.application.domain.InventoryReservation;
 
 public interface InventoryConfirmationScheduler {
     void scheduleConfirmation(InventoryReservation reservation);

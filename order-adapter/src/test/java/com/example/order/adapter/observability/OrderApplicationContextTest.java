@@ -1,4 +1,4 @@
-package com.example.order.adapter.observability;
+package com.order.demo.adapter.observability;
 
 import io.o11y.kit.autoconfigure.O11yKitProperties;
 import io.o11y.kit.http.HttpMetricRecorder;
@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>The test boots a minimal {@link TestApp} rather than the full
  * {@code OrderServiceApplication} so it does not require a database, Kafka,
  * or any other external dependency. {@code TestApp} re-uses the production
- * {@code com.example.order.adapter.observability} package only as the
+ * {@code com.order.demo.adapter.observability} package only as the
  * component-scan root, while excluding the heavy auto-configurations that
  * the production app pulls in via its own {@code @SpringBootApplication}.
  *
@@ -83,7 +83,7 @@ class OrderApplicationContextTest {
      * {@code spring.factories} / {@code AutoConfiguration.imports}.
      */
     @SpringBootApplication(
-            scanBasePackages = {"com.example.order.adapter.observability"},
+            scanBasePackages = {"com.order.demo.adapter.observability"},
             exclude = {
                     org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
                     org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class,

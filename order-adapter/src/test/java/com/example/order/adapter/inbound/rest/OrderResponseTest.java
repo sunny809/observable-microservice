@@ -1,6 +1,6 @@
-package com.example.order.adapter.inbound.rest;
+package com.order.demo.adapter.inbound.rest;
 
-import com.example.order.application.domain.OrderStatus;
+import com.order.demo.application.domain.OrderStatus;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

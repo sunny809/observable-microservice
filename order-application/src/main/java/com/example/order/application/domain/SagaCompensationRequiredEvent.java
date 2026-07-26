@@ -1,4 +1,4 @@
-package com.example.order.application.domain;
+package com.order.demo.application.domain;
 
 import java.util.List;
 

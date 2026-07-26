@@ -1,8 +1,8 @@
-package com.example.order.adapter.outbound.wms;
+package com.order.demo.adapter.outbound.wms;
 
-import com.example.order.application.port.out.WmsAck;
-import com.example.order.application.port.out.WmsPort;
-import com.example.order.application.port.out.WmsShipmentInstruction;
+import com.order.demo.application.port.out.WmsAck;
+import com.order.demo.application.port.out.WmsPort;
+import com.order.demo.application.port.out.WmsShipmentInstruction;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -4,4 +4,4 @@
  * <p>Contains OpenTelemetry, application entry point, and other
  * framework-specific configuration.
  */
-package com.example.order.infrastructure.config;
+package com.order.demo.infrastructure.config;

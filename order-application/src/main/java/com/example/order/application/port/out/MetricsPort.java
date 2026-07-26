@@ -1,11 +1,11 @@
-package com.example.order.application.port.out;
+package com.order.demo.application.port.out;
 
 /**
  * Outbound port for recording business and saga observability metrics.
  *
  * <p>Keeps the application layer free of any metrics framework (Micrometer,
  * OpenTelemetry). The adapter layer implements this interface — currently
- * {@code com.example.order.adapter.metrics.OrderMetrics} backed by Micrometer —
+ * {@code com.order.demo.adapter.metrics.OrderMetrics} backed by Micrometer —
  * and translates each call into Prometheus meters exposed at
  * {@code /actuator/prometheus}.
  *
@@ -19,7 +19,7 @@ package com.example.order.application.port.out;
  *   <li>{@code saga.gap.duration} (Timer, tag {@code gap})</li>
  * </ul>
  *
- * @see com.example.order.adapter.metrics.OrderMetrics
+ * @see com.order.demo.adapter.metrics.OrderMetrics
  */
 public interface MetricsPort {
 

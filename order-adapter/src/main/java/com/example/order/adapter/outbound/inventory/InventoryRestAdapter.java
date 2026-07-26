@@ -1,15 +1,15 @@
-package com.example.order.adapter.outbound.inventory;
+package com.order.demo.adapter.outbound.inventory;
 
 import java.util.concurrent.CompletableFuture;
 
-import com.example.order.adapter.config.InventoryAdapterProperties;
-import com.example.order.application.domain.InventoryReservation;
-import com.example.order.application.domain.ReservationStatus;
-import com.example.order.application.port.out.InventoryPort;
-import com.example.order.application.port.out.ReservationRequest;
-import com.example.order.application.port.out.ConfirmReservationCommand;
-import com.example.order.o11y.util.TracerHelper;
-import com.example.order.o11y.util.TracerHelper.SpanNames;
+import com.order.demo.adapter.config.InventoryAdapterProperties;
+import com.order.demo.application.domain.InventoryReservation;
+import com.order.demo.application.domain.ReservationStatus;
+import com.order.demo.application.port.out.InventoryPort;
+import com.order.demo.application.port.out.ReservationRequest;
+import com.order.demo.application.port.out.ConfirmReservationCommand;
+import com.order.demo.o11y.util.TracerHelper;
+import com.order.demo.o11y.util.TracerHelper.SpanNames;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import io.opentelemetry.api.trace.Span;

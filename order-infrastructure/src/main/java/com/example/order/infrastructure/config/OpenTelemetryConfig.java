@@ -1,4 +1,4 @@
-package com.example.order.infrastructure.config;
+package com.order.demo.infrastructure.config;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
  *
  * <p>Uses an OTLP gRPC exporter to send spans to a compatible backend
  * (e.g., Jaeger, Grafana Tempo). The global OpenTelemetry instance is
- * registered for use by the {@link com.example.order.o11y.util.TracerHelper}.
+ * registered for use by the {@link com.order.demo.o11y.util.TracerHelper}.
  */
 @Configuration
 public class OpenTelemetryConfig {

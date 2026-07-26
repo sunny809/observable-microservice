@@ -1,7 +1,7 @@
-package com.example.order.application.port.out;
+package com.order.demo.application.port.out;
 
-import com.example.order.application.domain.Order;
-import com.example.order.application.domain.OrderStatus;
+import com.order.demo.application.domain.Order;
+import com.order.demo.application.domain.OrderStatus;
 import java.util.Optional;
 
 /**
@@ -12,7 +12,7 @@ import java.util.Optional;
  * actual database operations, allowing the domain layer to remain
  * persistence-agnostic.
  *
- * @see com.example.order.adapter.outbound.persistence.OrderPersistenceAdapter
+ * @see com.order.demo.adapter.outbound.persistence.OrderPersistenceAdapter
  */
 public interface OrderRepositoryPort {
 

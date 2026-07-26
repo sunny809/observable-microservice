@@ -1,4 +1,4 @@
-package com.example.order.application.port.out;
+package com.order.demo.application.port.out;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -12,8 +12,8 @@ import java.util.concurrent.CompletableFuture;
  * <p>The {@link #sendInstruction} method is called asynchronously by the saga
  * after the WMS confirms picking is complete.
  *
- * @see com.example.order.adapter.outbound.tms.TmsRestAdapter
- * @see com.example.order.application.service.OrderPlacementSaga#onTmsRequired
+ * @see com.order.demo.adapter.outbound.tms.TmsRestAdapter
+ * @see com.order.demo.application.service.OrderPlacementSaga#onTmsRequired
  */
 public interface TmsPort {
 

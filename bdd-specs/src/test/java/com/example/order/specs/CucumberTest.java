@@ -1,4 +1,4 @@
-package com.example.order.specs;
+package com.order.demo.specs;
 
 import io.cucumber.junit.platform.engine.Cucumber;
 

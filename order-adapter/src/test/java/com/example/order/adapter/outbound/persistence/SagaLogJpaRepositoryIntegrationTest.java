@@ -1,4 +1,4 @@
-package com.example.order.adapter.outbound.persistence;
+package com.order.demo.adapter.outbound.persistence;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;

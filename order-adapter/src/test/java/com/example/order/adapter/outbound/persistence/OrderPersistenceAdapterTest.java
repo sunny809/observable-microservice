@@ -1,8 +1,8 @@
-package com.example.order.adapter.outbound.persistence;
+package com.order.demo.adapter.outbound.persistence;
 
-import com.example.order.application.domain.Order;
-import com.example.order.application.domain.OrderStatus;
-import com.example.order.application.port.in.OrderItem;
+import com.order.demo.application.domain.Order;
+import com.order.demo.application.domain.OrderStatus;
+import com.order.demo.application.port.in.OrderItem;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;

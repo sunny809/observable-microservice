@@ -1,4 +1,4 @@
-package com.example.order.adapter.health;
+package com.order.demo.adapter.health;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.health.Health;

@@ -1,4 +1,4 @@
-package com.example.order.application.port.out;
+package com.order.demo.application.port.out;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -12,8 +12,8 @@ import java.util.concurrent.CompletableFuture;
  * <p>The {@link #sendInstruction} method is called asynchronously by the saga
  * after the order transaction commits.
  *
- * @see com.example.order.adapter.outbound.wms.WmsRestAdapter
- * @see com.example.order.application.service.OrderPlacementSaga#onWmsRequired
+ * @see com.order.demo.adapter.outbound.wms.WmsRestAdapter
+ * @see com.order.demo.application.service.OrderPlacementSaga#onWmsRequired
  */
 public interface WmsPort {
 

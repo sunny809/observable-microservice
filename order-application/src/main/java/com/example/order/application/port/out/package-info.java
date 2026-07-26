@@ -7,9 +7,9 @@
  *
  * <p>Key interfaces:
  * <ul>
- *   <li>{@link com.example.order.application.port.out.InventoryPort} — Inventory service</li>
- *   <li>{@link com.example.order.application.port.out.WmsPort} — WMS service</li>
- *   <li>{@link com.example.order.application.port.out.OrderRepositoryPort} — Order persistence</li>
+ *   <li>{@link com.order.demo.application.port.out.InventoryPort} — Inventory service</li>
+ *   <li>{@link com.order.demo.application.port.out.WmsPort} — WMS service</li>
+ *   <li>{@link com.order.demo.application.port.out.OrderRepositoryPort} — Order persistence</li>
  * </ul>
  */
-package com.example.order.application.port.out;
+package com.order.demo.application.port.out;

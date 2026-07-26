@@ -1,9 +1,9 @@
-package com.example.order.infrastructure.adapter;
+package com.order.demo.infrastructure.adapter;
 
-import com.example.order.application.domain.InventoryReservation;
-import com.example.order.application.port.out.ConfirmReservationCommand;
-import com.example.order.application.port.out.InventoryPort;
-import com.example.order.application.port.out.InventoryConfirmationScheduler;
+import com.order.demo.application.domain.InventoryReservation;
+import com.order.demo.application.port.out.ConfirmReservationCommand;
+import com.order.demo.application.port.out.InventoryPort;
+import com.order.demo.application.port.out.InventoryConfirmationScheduler;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,4 +1,4 @@
-package com.example.order.adapter.inbound.rest;
+package com.order.demo.adapter.inbound.rest;
 
 import java.net.URI;
 
@@ -18,10 +18,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.order.adapter.inbound.rest.aop.Traced;
-import com.example.order.application.port.in.PlaceOrderCommand;
-import com.example.order.application.port.in.PlaceOrderUseCase;
-import com.example.order.o11y.util.TracerHelper.SpanNames;
+import com.order.demo.adapter.inbound.rest.aop.Traced;
+import com.order.demo.application.port.in.PlaceOrderCommand;
+import com.order.demo.application.port.in.PlaceOrderUseCase;
+import com.order.demo.o11y.util.TracerHelper.SpanNames;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;

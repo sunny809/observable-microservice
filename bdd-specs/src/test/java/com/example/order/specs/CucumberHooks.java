@@ -1,6 +1,6 @@
-package com.example.order.specs;
+package com.order.demo.specs;
 
-import com.example.order.adapter.outbound.cache.IdempotencyKeyCache;
+import com.order.demo.adapter.outbound.cache.IdempotencyKeyCache;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;

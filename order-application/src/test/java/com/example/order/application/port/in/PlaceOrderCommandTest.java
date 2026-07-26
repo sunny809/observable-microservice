@@ -1,4 +1,4 @@
-package com.example.order.application.port.in;
+package com.order.demo.application.port.in;
 
 import org.junit.jupiter.api.Test;
 

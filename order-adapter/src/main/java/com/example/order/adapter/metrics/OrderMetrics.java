@@ -1,6 +1,6 @@
-package com.example.order.adapter.metrics;
+package com.order.demo.adapter.metrics;
 
-import com.example.order.application.port.out.MetricsPort;
+import com.order.demo.application.port.out.MetricsPort;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.TimeUnit;

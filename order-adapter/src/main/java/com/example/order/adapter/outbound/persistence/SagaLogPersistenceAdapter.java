@@ -1,7 +1,7 @@
-package com.example.order.adapter.outbound.persistence;
+package com.order.demo.adapter.outbound.persistence;
 
-import com.example.order.application.port.out.SagaLogEntry;
-import com.example.order.application.port.out.SagaLogPort;
+import com.order.demo.application.port.out.SagaLogEntry;
+import com.order.demo.application.port.out.SagaLogPort;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;

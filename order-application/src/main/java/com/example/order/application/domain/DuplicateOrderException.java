@@ -1,4 +1,4 @@
-package com.example.order.application.domain;
+package com.order.demo.application.domain;
 
 /**
  * Thrown when a client attempts to place an order using an idempotency key
@@ -6,7 +6,7 @@ package com.example.order.application.domain;
  *
  * <p>Maps to HTTP 409 Conflict in the REST layer.
  *
- * @see com.example.order.application.service.OrderPlacementSaga#placeOrder
+ * @see com.order.demo.application.service.OrderPlacementSaga#placeOrder
  */
 public class DuplicateOrderException extends RuntimeException {
     public DuplicateOrderException(String idempotencyKey) {

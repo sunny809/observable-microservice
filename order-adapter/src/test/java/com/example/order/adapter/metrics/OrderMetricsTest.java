@@ -1,4 +1,4 @@
-package com.example.order.adapter.metrics;
+package com.order.demo.adapter.metrics;
 
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;

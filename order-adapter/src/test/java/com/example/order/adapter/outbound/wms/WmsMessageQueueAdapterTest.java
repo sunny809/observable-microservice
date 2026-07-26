@@ -1,7 +1,7 @@
-package com.example.order.adapter.outbound.wms;
+package com.order.demo.adapter.outbound.wms;
 
-import com.example.order.application.port.out.WmsAck;
-import com.example.order.application.port.out.WmsShipmentInstruction;
+import com.order.demo.application.port.out.WmsAck;
+import com.order.demo.application.port.out.WmsShipmentInstruction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

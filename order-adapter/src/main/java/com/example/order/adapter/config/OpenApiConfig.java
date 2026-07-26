@@ -1,4 +1,4 @@
-package com.example.order.adapter.config;
+package com.order.demo.adapter.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;

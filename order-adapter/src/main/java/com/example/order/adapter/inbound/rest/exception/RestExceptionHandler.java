@@ -1,8 +1,8 @@
-package com.example.order.adapter.inbound.rest.exception;
+package com.order.demo.adapter.inbound.rest.exception;
 
-import com.example.order.adapter.inbound.rest.OrderNotFoundException;
-import com.example.order.application.domain.DuplicateOrderException;
-import com.example.order.application.domain.InsufficientInventoryException;
+import com.order.demo.adapter.inbound.rest.OrderNotFoundException;
+import com.order.demo.application.domain.DuplicateOrderException;
+import com.order.demo.application.domain.InsufficientInventoryException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import org.slf4j.MDC;

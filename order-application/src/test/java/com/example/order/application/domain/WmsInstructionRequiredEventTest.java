@@ -1,6 +1,6 @@
-package com.example.order.application.domain;
+package com.order.demo.application.domain;
 
-import com.example.order.application.port.out.WmsShipmentInstruction;
+import com.order.demo.application.port.out.WmsShipmentInstruction;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

@@ -1,10 +1,10 @@
-package com.example.order.adapter.outbound.tms;
+package com.order.demo.adapter.outbound.tms;
 
-import com.example.order.application.port.out.TmsAck;
-import com.example.order.application.port.out.TmsPort;
-import com.example.order.application.port.out.TmsShipmentInstruction;
-import com.example.order.o11y.util.TracerHelper;
-import com.example.order.o11y.util.TracerHelper.SpanNames;
+import com.order.demo.application.port.out.TmsAck;
+import com.order.demo.application.port.out.TmsPort;
+import com.order.demo.application.port.out.TmsShipmentInstruction;
+import com.order.demo.o11y.util.TracerHelper;
+import com.order.demo.o11y.util.TracerHelper.SpanNames;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import io.opentelemetry.api.trace.Span;

@@ -1,9 +1,9 @@
-package com.example.order.adapter.outbound.wms;
+package com.order.demo.adapter.outbound.wms;
 
-import com.example.order.adapter.config.WmsAdapterProperties;
-import com.example.order.application.port.out.WmsAck;
-import com.example.order.application.port.out.WmsPort;
-import com.example.order.application.port.out.WmsShipmentInstruction;
+import com.order.demo.adapter.config.WmsAdapterProperties;
+import com.order.demo.application.port.out.WmsAck;
+import com.order.demo.application.port.out.WmsPort;
+import com.order.demo.application.port.out.WmsShipmentInstruction;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;
@@ -37,7 +37,7 @@ import java.util.concurrent.CompletableFuture;
  * optional OTel span creation automatically for every outbound call.
  *
  * @see WmsRestAdapter for the WebClient-based (async) implementation
- * @see com.example.order.adapter.config.RestTemplateConfig
+ * @see com.order.demo.adapter.config.RestTemplateConfig
  */
 @Component
 public class WmsRestTemplateAdapter implements WmsPort {

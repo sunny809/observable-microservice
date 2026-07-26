@@ -1,4 +1,4 @@
-package com.example.order.application.domain;
+package com.order.demo.application.domain;
 
 /**
  * Represents the lifecycle states of an order in the order placement saga.

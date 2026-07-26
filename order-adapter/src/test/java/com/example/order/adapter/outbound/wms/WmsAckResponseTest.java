@@ -1,6 +1,6 @@
-package com.example.order.adapter.outbound.wms;
+package com.order.demo.adapter.outbound.wms;
 
-import com.example.order.application.port.out.WmsAck;
+import com.order.demo.application.port.out.WmsAck;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

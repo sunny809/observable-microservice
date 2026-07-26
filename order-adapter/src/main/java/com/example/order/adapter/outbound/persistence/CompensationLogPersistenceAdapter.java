@@ -1,7 +1,7 @@
-package com.example.order.adapter.outbound.persistence;
+package com.order.demo.adapter.outbound.persistence;
 
-import com.example.order.application.port.out.CompensationLogPort;
-import com.example.order.application.port.out.CompensationStatus;
+import com.order.demo.application.port.out.CompensationLogPort;
+import com.order.demo.application.port.out.CompensationStatus;
 import org.springframework.stereotype.Component;
 
 @Component

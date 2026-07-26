@@ -1,4 +1,4 @@
-package com.example.order.infrastructure.config;
+package com.order.demo.infrastructure.config;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;

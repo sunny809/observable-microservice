@@ -1,4 +1,4 @@
-package com.example.order.specs;
+package com.order.demo.specs;
 
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;

@@ -1,6 +1,6 @@
-package com.example.order.application.domain;
+package com.order.demo.application.domain;
 
-import com.example.order.application.port.out.WmsShipmentInstruction;
+import com.order.demo.application.port.out.WmsShipmentInstruction;
 import java.util.List;
 import java.util.Objects;
 
@@ -8,12 +8,12 @@ import java.util.Objects;
  * Domain event published when the WMS confirms that order picking is complete.
  *
  * <p>This event triggers the next phase of the saga: sending the TMS dispatch
- * instruction. It is published by {@link com.example.order.application.service.OrderPlacementSaga}
+ * instruction. It is published by {@link com.order.demo.application.service.OrderPlacementSaga}
  * and consumed by {@code @TransactionalEventListener}.
  *
  * <p>All fields are immutable (defensive copies are made for collections).
  *
- * @see com.example.order.application.service.OrderPlacementSaga#onWmsPickingCompleted
+ * @see com.order.demo.application.service.OrderPlacementSaga#onWmsPickingCompleted
  */
 public class WmsPickingCompletedEvent {
     private final String orderId;

@@ -1,7 +1,7 @@
-package com.example.order.adapter.inbound.rest.exception;
+package com.order.demo.adapter.inbound.rest.exception;
 
-import com.example.order.application.domain.DuplicateOrderException;
-import com.example.order.application.domain.InsufficientInventoryException;
+import com.order.demo.application.domain.DuplicateOrderException;
+import com.order.demo.application.domain.InsufficientInventoryException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;

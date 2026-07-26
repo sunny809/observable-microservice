@@ -1,4 +1,4 @@
-package com.example.order.adapter.inbound.rest;
+package com.order.demo.adapter.inbound.rest;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -11,7 +11,7 @@ import java.util.Objects;
  * DTO for the place order REST request.
  *
  * <p>Validated by Jakarta Bean Validation and mapped to
- * {@link com.example.order.application.port.in.PlaceOrderCommand}
+ * {@link com.order.demo.application.port.in.PlaceOrderCommand}
  * by {@link PlaceOrderMapper}.
  *
  * @see OrderController#placeOrder

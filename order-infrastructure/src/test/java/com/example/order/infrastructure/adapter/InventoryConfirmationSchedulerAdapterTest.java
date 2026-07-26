@@ -1,8 +1,8 @@
-package com.example.order.infrastructure.adapter;
+package com.order.demo.infrastructure.adapter;
 
-import com.example.order.application.domain.InventoryReservation;
-import com.example.order.application.port.out.ConfirmReservationCommand;
-import com.example.order.application.port.out.InventoryPort;
+import com.order.demo.application.domain.InventoryReservation;
+import com.order.demo.application.port.out.ConfirmReservationCommand;
+import com.order.demo.application.port.out.InventoryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

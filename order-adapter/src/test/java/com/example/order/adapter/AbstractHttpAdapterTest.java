@@ -1,4 +1,4 @@
-package com.example.order.adapter;
+package com.order.demo.adapter;
 
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.Tag;

@@ -1,10 +1,10 @@
-package com.example.order.application.service;
+package com.order.demo.application.service;
 
-import com.example.order.application.domain.*;
-import com.example.order.application.port.in.OrderItem;
-import com.example.order.application.port.in.OrderPlacedResult;
-import com.example.order.application.port.in.PlaceOrderCommand;
-import com.example.order.application.port.out.*;
+import com.order.demo.application.domain.*;
+import com.order.demo.application.port.in.OrderItem;
+import com.order.demo.application.port.in.OrderPlacedResult;
+import com.order.demo.application.port.in.PlaceOrderCommand;
+import com.order.demo.application.port.out.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;

@@ -1,9 +1,9 @@
-package com.example.order.infrastructure.adapter;
+package com.order.demo.infrastructure.adapter;
 
-import com.example.order.application.domain.InventoryReservation;
-import com.example.order.application.domain.ReservationStatus;
-import com.example.order.application.domain.WmsInstructionRequiredEvent;
-import com.example.order.application.port.out.WmsShipmentInstruction;
+import com.order.demo.application.domain.InventoryReservation;
+import com.order.demo.application.domain.ReservationStatus;
+import com.order.demo.application.domain.WmsInstructionRequiredEvent;
+import com.order.demo.application.port.out.WmsShipmentInstruction;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 

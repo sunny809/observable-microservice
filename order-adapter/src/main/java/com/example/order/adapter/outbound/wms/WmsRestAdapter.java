@@ -1,11 +1,11 @@
-package com.example.order.adapter.outbound.wms;
+package com.order.demo.adapter.outbound.wms;
 
-import com.example.order.adapter.config.WmsAdapterProperties;
-import com.example.order.application.port.out.WmsAck;
-import com.example.order.application.port.out.WmsPort;
-import com.example.order.application.port.out.WmsShipmentInstruction;
-import com.example.order.o11y.util.TracerHelper;
-import com.example.order.o11y.util.TracerHelper.SpanNames;
+import com.order.demo.adapter.config.WmsAdapterProperties;
+import com.order.demo.application.port.out.WmsAck;
+import com.order.demo.application.port.out.WmsPort;
+import com.order.demo.application.port.out.WmsShipmentInstruction;
+import com.order.demo.o11y.util.TracerHelper;
+import com.order.demo.o11y.util.TracerHelper.SpanNames;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import io.opentelemetry.api.trace.Span;

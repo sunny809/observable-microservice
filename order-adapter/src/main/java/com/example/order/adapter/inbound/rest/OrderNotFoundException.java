@@ -1,4 +1,4 @@
-package com.example.order.adapter.inbound.rest;
+package com.order.demo.adapter.inbound.rest;
 
 public class OrderNotFoundException extends RuntimeException {
     public OrderNotFoundException(String orderId) {

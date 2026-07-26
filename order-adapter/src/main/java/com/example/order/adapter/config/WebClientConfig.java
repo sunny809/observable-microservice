@@ -1,4 +1,4 @@
-package com.example.order.adapter.config;
+package com.order.demo.adapter.config;
 
 import io.o11y.kit.webflux.ClientObservationHandler;
 import io.netty.channel.ChannelOption;

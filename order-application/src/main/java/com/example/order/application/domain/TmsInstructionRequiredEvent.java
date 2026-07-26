@@ -1,19 +1,19 @@
-package com.example.order.application.domain;
+package com.order.demo.application.domain;
 
-import com.example.order.application.port.out.TmsShipmentInstruction;
+import com.order.demo.application.port.out.TmsShipmentInstruction;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * Domain event published when a TMS dispatch instruction needs to be sent.
  *
- * <p>Published by {@link com.example.order.application.service.OrderPlacementSaga}
+ * <p>Published by {@link com.order.demo.application.service.OrderPlacementSaga}
  * after WMS picking is complete. Consumed asynchronously by
  * {@code @TransactionalEventListener} to send the instruction to the TMS service.
  *
  * <p>All fields are immutable (defensive copies are made for collections).
  *
- * @see com.example.order.application.service.OrderPlacementSaga#onTmsRequired
+ * @see com.order.demo.application.service.OrderPlacementSaga#onTmsRequired
  */
 public class TmsInstructionRequiredEvent {
     private final String orderId;

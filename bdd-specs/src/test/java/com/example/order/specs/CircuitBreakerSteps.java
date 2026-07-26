@@ -1,4 +1,4 @@
-package com.example.order.specs;
+package com.order.demo.specs;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
 import io.cucumber.java.en.Given;

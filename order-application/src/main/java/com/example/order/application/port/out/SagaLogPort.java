@@ -28,4 +28,12 @@ public interface SagaLogPort {
     void recordSagaCompensationFailed(String orderId, String stepName, String error);
 
     List<SagaLogEntry> findPendingStepsOlderThan(java.time.Duration timeout);
+
+    /**
+     * Finds all saga log entries for a given order, ordered by creation time.
+     *
+     * @param orderId the order ID
+     * @return list of saga log entries for the order
+     */
+    List<SagaLogEntry> findByOrderId(String orderId);
 }

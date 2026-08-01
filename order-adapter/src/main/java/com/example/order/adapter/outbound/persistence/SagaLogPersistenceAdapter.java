@@ -146,6 +146,17 @@ public class SagaLogPersistenceAdapter implements SagaLogPort {
             .collect(Collectors.toList());
     }
 
+    @Override
+    public List<SagaLogEntry> findByOrderId(String orderId) {
+        return repository.findByOrderIdOrderByCreatedAtAsc(orderId).stream()
+            .map(e -> new SagaLogEntry(
+                e.getId(), e.getOrderId(), e.getStepName(),
+                e.getStepStatus(), e.getStartedAt(), e.getCompletedAt(),
+                e.getDetail(), e.getPreviousStatus(), e.getNewStatus(), e.getChangedBy()
+            ))
+            .collect(Collectors.toList());
+    }
+
     /**
      * Finds the latest PENDING step for the given order and step name, or creates
      * a new PENDING entity if none exists. This ensures that status transitions

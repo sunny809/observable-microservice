@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.order.demo.adapter.inbound.rest.aop.Traced;
 import com.order.demo.application.port.in.PlaceOrderCommand;
 import com.order.demo.application.port.in.PlaceOrderUseCase;
-import com.order.demo.o11y.util.TracerHelper.SpanNames;
+import com.order.demo.adapter.observability.TracerHelper.SpanNames;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;

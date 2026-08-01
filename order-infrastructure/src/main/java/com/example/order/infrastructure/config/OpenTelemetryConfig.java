@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
  *
  * <p>Uses an OTLP gRPC exporter to send spans to a compatible backend
  * (e.g., Jaeger, Grafana Tempo). The global OpenTelemetry instance is
- * registered for use by the {@link com.order.demo.o11y.util.TracerHelper}.
+ * registered for use by the {@link com.order.demo.adapter.observability.TracerHelper}.
  */
 @Configuration
 public class OpenTelemetryConfig {

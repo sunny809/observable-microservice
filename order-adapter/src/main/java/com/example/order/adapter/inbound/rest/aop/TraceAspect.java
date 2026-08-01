@@ -1,6 +1,6 @@
 package com.order.demo.adapter.inbound.rest.aop;
 
-import com.order.demo.o11y.util.TracerHelper;
+import com.order.demo.adapter.observability.TracerHelper;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;

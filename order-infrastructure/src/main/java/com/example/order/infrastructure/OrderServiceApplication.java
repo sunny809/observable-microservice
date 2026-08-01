@@ -8,8 +8,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(scanBasePackages = "com.order.demo")
-@EntityScan(basePackages = "com.order.demo.adapter.outbound.persistence")
-@EnableJpaRepositories(basePackages = "com.order.demo.adapter.outbound.persistence")
+@EntityScan(basePackages = "com.order.demo.adapter.outbound")
+@EnableJpaRepositories(basePackages = "com.order.demo.adapter.outbound")
 @EnableScheduling
 public class OrderServiceApplication {
     public static void main(String[] args) {

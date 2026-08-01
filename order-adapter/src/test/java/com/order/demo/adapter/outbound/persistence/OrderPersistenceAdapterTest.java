@@ -165,4 +165,16 @@ class OrderPersistenceAdapterTest {
         assertTrue(result.isPresent());
         assertTrue(result.get().getAllReservationIds().isEmpty());
     }
+
+    @Test
+    void testSaveMapsVersionField() {
+        Order order = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 2)),
+                OrderStatus.CREATED, "idem-1", "resv-1", java.time.Instant.now(),
+                java.util.Collections.emptyList(), 0L);
+
+        adapter.save(order);
+
+        verify(repository).save(argThat(entity ->
+                entity.getVersion() != null && entity.getVersion() == 0L));
+    }
 }

@@ -62,6 +62,9 @@ public class OrderPersistenceAdapter implements OrderRepositoryPort {
                 LocalDateTime.ofInstant(order.getCreatedAt(), java.time.ZoneOffset.UTC));
         entity.setItems(itemsJson);
         entity.setReservationIds(reservationIdsJson);
+        if (order.getVersion() != null) {
+            entity.setVersion(order.getVersion());
+        }
         return entity;
     }
 
@@ -76,7 +79,8 @@ public class OrderPersistenceAdapter implements OrderRepositoryPort {
                 entity.getIdempotencyKey(),
                 entity.getReservationId(),
                 entity.getCreatedAt().atZone(java.time.ZoneOffset.UTC).toInstant(),
-                allReservationIds);
+                allReservationIds,
+                entity.getVersion());
     }
 
     private String serializeItems(List<OrderItem> items) {

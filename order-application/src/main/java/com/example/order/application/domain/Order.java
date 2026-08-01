@@ -34,6 +34,7 @@ public class Order {
     private String reservationId;
     private final Instant createdAt;
     private final List<String> allReservationIds;
+    private final Long version;
 
     public Order(String orderId,
                  String customerId,
@@ -42,7 +43,8 @@ public class Order {
                  String idempotencyKey,
                  String reservationId,
                  Instant createdAt,
-                 List<String> allReservationIds) {
+                 List<String> allReservationIds,
+                 Long version) {
         this.orderId = Objects.requireNonNull(orderId);
         this.customerId = Objects.requireNonNull(customerId);
         this.items = Collections.unmodifiableList(Objects.requireNonNull(items));
@@ -52,6 +54,19 @@ public class Order {
         this.createdAt = Objects.requireNonNull(createdAt);
         this.allReservationIds = allReservationIds != null
                 ? List.copyOf(allReservationIds) : List.of();
+        this.version = version;
+    }
+
+    public Order(String orderId,
+                 String customerId,
+                 List<OrderItem> items,
+                 OrderStatus status,
+                 String idempotencyKey,
+                 String reservationId,
+                 Instant createdAt,
+                 List<String> allReservationIds) {
+        this(orderId, customerId, items, status, idempotencyKey, reservationId,
+             createdAt, allReservationIds, null);
     }
 
     public Order(String orderId,
@@ -62,7 +77,7 @@ public class Order {
                  String reservationId,
                  Instant createdAt) {
         this(orderId, customerId, items, status, idempotencyKey, reservationId,
-             createdAt, List.of());
+             createdAt, List.of(), null);
     }
 
     public static Order create(PlaceOrderCommand command, String reservationId) {
@@ -184,5 +199,27 @@ public class Order {
 
     public List<String> getAllReservationIds() {
         return allReservationIds;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    /**
+     * Transitions the order to a new status, returning a new Order instance
+     * with the updated status and the same version.
+     *
+     * @param newStatus the target status
+     * @return a new Order with the updated status
+     * @throws IllegalStateException if the transition is not allowed from the current status
+     */
+    public Order transitionTo(OrderStatus newStatus) {
+        Set<OrderStatus> allowed = ALLOWED_TRANSITIONS.get(this.status);
+        if (allowed == null || !allowed.contains(newStatus)) {
+            throw new IllegalStateException(
+                    "Illegal status transition: " + this.status + " → " + newStatus);
+        }
+        return new Order(orderId, customerId, items, newStatus, idempotencyKey,
+                         reservationId, createdAt, allReservationIds, version);
     }
 }

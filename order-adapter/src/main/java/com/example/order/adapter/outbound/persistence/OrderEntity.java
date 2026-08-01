@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.LocalDateTime;
 
 @Entity
@@ -37,6 +38,10 @@ public class OrderEntity {
     @Lob
     @Column(name = "reservation_ids", columnDefinition = "TEXT")
     private String reservationIds;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
 
     public OrderEntity() {
     }
@@ -92,5 +97,13 @@ public class OrderEntity {
 
     public void setReservationIds(String reservationIds) {
         this.reservationIds = reservationIds;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

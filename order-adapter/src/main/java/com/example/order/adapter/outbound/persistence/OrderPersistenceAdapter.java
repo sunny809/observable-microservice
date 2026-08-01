@@ -50,6 +50,14 @@ public class OrderPersistenceAdapter implements OrderRepositoryPort {
         repository.updateStatus(orderId, status.name());
     }
 
+    @Override
+    public boolean updateStatusWithVersion(String orderId, OrderStatus newStatus,
+                                           OrderStatus expectedStatus, long expectedVersion) {
+        int affected = repository.updateStatusWithVersion(
+                orderId, newStatus.name(), expectedStatus.name(), expectedVersion);
+        return affected > 0;
+    }
+
     private OrderEntity toEntity(Order order) {
         String itemsJson = serializeItems(order.getItems());
         String reservationIdsJson = serializeReservationIds(order.getAllReservationIds());

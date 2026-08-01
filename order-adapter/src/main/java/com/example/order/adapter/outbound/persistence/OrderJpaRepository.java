@@ -12,4 +12,12 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, String> {
     @Modifying
     @Query("UPDATE OrderEntity o SET o.status = :status WHERE o.id = :id")
     void updateStatus(@Param("id") String id, @Param("status") String status);
+
+    @Modifying
+    @Query("UPDATE OrderEntity o SET o.status = :newStatus, o.version = o.version + 1 " +
+           "WHERE o.id = :id AND o.status = :expectedStatus AND o.version = :expectedVersion")
+    int updateStatusWithVersion(@Param("id") String id,
+                                @Param("newStatus") String newStatus,
+                                @Param("expectedStatus") String expectedStatus,
+                                @Param("expectedVersion") Long expectedVersion);
 }

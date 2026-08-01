@@ -46,4 +46,21 @@ public interface OrderRepositoryPort {
      * @param status the new status
      */
     void updateStatus(String orderId, OrderStatus status);
+
+    /**
+     * Updates the order status with optimistic locking.
+     *
+     * <p>The update only succeeds if the order's current status matches
+     * {@code expectedStatus} and its version matches {@code expectedVersion}.
+     * If either precondition fails, no rows are affected and the method
+     * returns {@code false}.
+     *
+     * @param orderId         the order ID
+     * @param newStatus       the new status
+     * @param expectedStatus  the expected current status (precondition)
+     * @param expectedVersion the expected current version (optimistic lock)
+     * @return true if the update succeeded (1 row affected), false if precondition failed
+     */
+    boolean updateStatusWithVersion(String orderId, OrderStatus newStatus,
+                                    OrderStatus expectedStatus, long expectedVersion);
 }

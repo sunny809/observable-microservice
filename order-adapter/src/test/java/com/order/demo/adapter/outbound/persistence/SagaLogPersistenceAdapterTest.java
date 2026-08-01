@@ -71,4 +71,38 @@ class SagaLogPersistenceAdapterTest {
                     && !createdAt.isAfter(after);
         }));
     }
+
+    @Test
+    @DisplayName("recordSagaStepCompleted with audit fields should set previousStatus, newStatus, and changedBy")
+    void testRecordSagaStepCompletedWithAuditFields() {
+        when(repository.findLatestPendingStep("order-1", "WMS_ACKED"))
+                .thenReturn(java.util.Optional.empty());
+
+        adapter.recordSagaStepCompleted("order-1", "WMS_ACKED",
+                "WMS accepted", "CREATED", "WMS_ACKED");
+
+        verify(repository).save(argThat(entity ->
+                "CREATED".equals(entity.getPreviousStatus())
+                && "WMS_ACKED".equals(entity.getNewStatus())
+                && "SYSTEM".equals(entity.getChangedBy())
+                && "COMPLETED".equals(entity.getStepStatus())
+        ));
+    }
+
+    @Test
+    @DisplayName("recordSagaStepFailed with audit fields should set previousStatus, newStatus, and changedBy")
+    void testRecordSagaStepFailedWithAuditFields() {
+        when(repository.findLatestPendingStep("order-1", "WMS_ACKED"))
+                .thenReturn(java.util.Optional.empty());
+
+        adapter.recordSagaStepFailed("order-1", "WMS_ACKED",
+                "WMS rejected", "CREATED", "FAILED");
+
+        verify(repository).save(argThat(entity ->
+                "CREATED".equals(entity.getPreviousStatus())
+                && "FAILED".equals(entity.getNewStatus())
+                && "SYSTEM".equals(entity.getChangedBy())
+                && "FAILED".equals(entity.getStepStatus())
+        ));
+    }
 }

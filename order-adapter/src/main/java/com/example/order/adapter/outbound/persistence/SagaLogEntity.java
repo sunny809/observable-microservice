@@ -47,6 +47,15 @@ public class SagaLogEntity {
     @Column(name = "next_retry_at")
     private LocalDateTime nextRetryAt;
 
+    @Column(name = "previous_status")
+    private String previousStatus;
+
+    @Column(name = "new_status")
+    private String newStatus;
+
+    @Column(name = "changed_by")
+    private String changedBy;
+
     public SagaLogEntity() {}
 
     public SagaLogEntity(String orderId, String step, String detail, LocalDateTime createdAt) {
@@ -70,6 +79,9 @@ public class SagaLogEntity {
     public String getCompensationStatus() { return compensationStatus; }
     public Integer getRetryCount() { return retryCount; }
     public LocalDateTime getNextRetryAt() { return nextRetryAt; }
+    public String getPreviousStatus() { return previousStatus; }
+    public String getNewStatus() { return newStatus; }
+    public String getChangedBy() { return changedBy; }
 
     // Setters
     public void setId(Long id) { this.id = id; }
@@ -85,4 +97,7 @@ public class SagaLogEntity {
     public void setCompensationStatus(String compensationStatus) { this.compensationStatus = compensationStatus; }
     public void setRetryCount(Integer retryCount) { this.retryCount = retryCount; }
     public void setNextRetryAt(LocalDateTime nextRetryAt) { this.nextRetryAt = nextRetryAt; }
+    public void setPreviousStatus(String previousStatus) { this.previousStatus = previousStatus; }
+    public void setNewStatus(String newStatus) { this.newStatus = newStatus; }
+    public void setChangedBy(String changedBy) { this.changedBy = changedBy; }
 }

@@ -9,5 +9,8 @@ public record SagaLogEntry(
     String stepStatus,
     LocalDateTime startedAt,
     LocalDateTime completedAt,
-    String detail
+    String detail,
+    String previousStatus,
+    String newStatus,
+    String changedBy
 ) {}

@@ -61,6 +61,32 @@ public class SagaLogPersistenceAdapter implements SagaLogPort {
     }
 
     @Override
+    public void recordSagaStepCompleted(String orderId, String stepName, String message,
+                                         String previousStatus, String newStatus) {
+        SagaLogEntity entity = findOrCreatePendingStep(orderId, stepName);
+        entity.setStepStatus("COMPLETED");
+        entity.setCompletedAt(LocalDateTime.now());
+        entity.setDetail(message);
+        entity.setPreviousStatus(previousStatus);
+        entity.setNewStatus(newStatus);
+        entity.setChangedBy("SYSTEM");
+        repository.save(entity);
+    }
+
+    @Override
+    public void recordSagaStepFailed(String orderId, String stepName, String error,
+                                      String previousStatus, String newStatus) {
+        SagaLogEntity entity = findOrCreatePendingStep(orderId, stepName);
+        entity.setStepStatus("FAILED");
+        entity.setCompletedAt(LocalDateTime.now());
+        entity.setDetail(error);
+        entity.setPreviousStatus(previousStatus);
+        entity.setNewStatus(newStatus);
+        entity.setChangedBy("SYSTEM");
+        repository.save(entity);
+    }
+
+    @Override
     public void recordSagaCompensationRequired(String orderId, String stepName, String reason) {
         SagaLogEntity entity = findOrCreatePendingStep(orderId, stepName);
         entity.setStepStatus("COMPENSATION_REQUIRED");
@@ -115,7 +141,7 @@ public class SagaLogPersistenceAdapter implements SagaLogPort {
             .map(e -> new SagaLogEntry(
                 e.getId(), e.getOrderId(), e.getStepName(),
                 e.getStepStatus(), e.getStartedAt(), e.getCompletedAt(),
-                e.getDetail()
+                e.getDetail(), e.getPreviousStatus(), e.getNewStatus(), e.getChangedBy()
             ))
             .collect(Collectors.toList());
     }

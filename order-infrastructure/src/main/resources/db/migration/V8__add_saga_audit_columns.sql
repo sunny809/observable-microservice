@@ -1,0 +1,3 @@
+ALTER TABLE saga_logs ADD COLUMN previous_status VARCHAR(32);
+ALTER TABLE saga_logs ADD COLUMN new_status VARCHAR(32);
+ALTER TABLE saga_logs ADD COLUMN changed_by VARCHAR(100) NOT NULL DEFAULT 'SYSTEM';

@@ -34,7 +34,7 @@ class SagaTimeoutDetectorTest {
         // given
         SagaTimeoutDetector detector = new SagaTimeoutDetector(sagaLogPort, eventPublisher, Duration.ofSeconds(300));
         SagaLogEntry entry = new SagaLogEntry(1L, "order-123", "WMS_ACKED", "PENDING",
-            LocalDateTime.now().minusMinutes(10), null, null);
+            LocalDateTime.now().minusMinutes(10), null, null, null, null, null);
         when(sagaLogPort.findPendingStepsOlderThan(any(Duration.class)))
             .thenReturn(List.of(entry));
 

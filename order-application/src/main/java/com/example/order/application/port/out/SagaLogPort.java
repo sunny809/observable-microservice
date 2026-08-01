@@ -13,6 +13,12 @@ public interface SagaLogPort {
 
     void recordSagaStepFailed(String orderId, String stepName, String error);
 
+    void recordSagaStepCompleted(String orderId, String stepName, String message,
+                                  String previousStatus, String newStatus);
+
+    void recordSagaStepFailed(String orderId, String stepName, String error,
+                               String previousStatus, String newStatus);
+
     void recordSagaCompensationRequired(String orderId, String stepName, String reason);
 
     void recordSagaCompensationStarted(String orderId, String stepName);

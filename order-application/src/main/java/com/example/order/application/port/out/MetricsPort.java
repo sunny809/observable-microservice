@@ -72,4 +72,25 @@ public interface MetricsPort {
      * @param durationMillis the idle duration in milliseconds
      */
     void recordSagaGap(String gap, long durationMillis);
+
+    /**
+     * Records a successfully sent outbox event.
+     *
+     * @param eventType the outbox event type (e.g., {@code "WmsInstructionRequiredEvent"})
+     */
+    void recordOutboxEventSent(String eventType);
+
+    /**
+     * Records a failed outbox event send attempt.
+     *
+     * @param eventType the outbox event type (e.g., {@code "WmsInstructionRequiredEvent"})
+     */
+    void recordOutboxEventFailed(String eventType);
+
+    /**
+     * Records the current number of pending outbox events.
+     *
+     * @param count the number of pending events
+     */
+    void recordOutboxPendingCount(long count);
 }

@@ -23,6 +23,9 @@ public class OrderMetrics implements MetricsPort {
     private static final String METRIC_SAGA_DURATION = "saga.duration";
     private static final String METRIC_SAGA_STEP_DURATION = "saga.step.duration";
     private static final String METRIC_SAGA_GAP_DURATION = "saga.gap.duration";
+    private static final String METRIC_OUTBOX_SENT = "outbox.events.sent";
+    private static final String METRIC_OUTBOX_FAILED = "outbox.events.failed";
+    private static final String METRIC_OUTBOX_PENDING = "outbox.events.pending";
 
     private final MeterRegistry registry;
 
@@ -71,5 +74,20 @@ public class OrderMetrics implements MetricsPort {
                 .tag("gap", gap)
                 .register(registry)
                 .record(durationMillis, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public void recordOutboxEventSent(String eventType) {
+        registry.counter(METRIC_OUTBOX_SENT, "eventType", eventType).increment();
+    }
+
+    @Override
+    public void recordOutboxEventFailed(String eventType) {
+        registry.counter(METRIC_OUTBOX_FAILED, "eventType", eventType).increment();
+    }
+
+    @Override
+    public void recordOutboxPendingCount(long count) {
+        registry.gauge(METRIC_OUTBOX_PENDING, count);
     }
 }

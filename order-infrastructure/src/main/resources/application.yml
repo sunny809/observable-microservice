@@ -52,6 +52,8 @@ app:
   kafka:
     wms:
       topic: wms.shipment.instructions
+  outbox:
+    poll-interval: 5000
   inventory:
     confirmation-delay-seconds: 60
   saga:

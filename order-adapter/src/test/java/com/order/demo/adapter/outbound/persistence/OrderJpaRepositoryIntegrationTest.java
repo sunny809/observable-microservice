@@ -1,5 +1,6 @@
 package com.order.demo.adapter.outbound.persistence;
 
+import com.order.demo.application.port.in.OrderItem;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
@@ -35,7 +36,7 @@ class OrderJpaRepositoryIntegrationTest {
         em.getTransaction().begin();
         OrderEntity entity = new OrderEntity("ord-1", "cust-1", "idem-1", "resv-1",
                 "CREATED", LocalDateTime.now());
-        entity.setItems("[{\"sku\":\"SKU-1\",\"quantity\":2}]");
+        entity.setItems(List.of(new OrderItem("SKU-1", 2)));
         em.persist(entity);
         em.getTransaction().commit();
 

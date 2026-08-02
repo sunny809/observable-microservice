@@ -1,12 +1,16 @@
 package com.order.demo.adapter.outbound.persistence;
 
+import com.order.demo.adapter.outbound.persistence.OrderItemListConverter;
+import com.order.demo.adapter.outbound.persistence.StringListConverter;
+import com.order.demo.application.port.in.OrderItem;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "orders")
@@ -31,13 +35,13 @@ public class OrderEntity {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Lob
+    @Convert(converter = OrderItemListConverter.class)
     @Column(name = "items", columnDefinition = "TEXT")
-    private String items;
+    private List<OrderItem> items;
 
-    @Lob
+    @Convert(converter = StringListConverter.class)
     @Column(name = "reservation_ids", columnDefinition = "TEXT")
-    private String reservationIds;
+    private List<String> reservationIds;
 
     @Version
     @Column(name = "version")
@@ -83,19 +87,19 @@ public class OrderEntity {
         this.status = status;
     }
 
-    public String getItems() {
+    public List<OrderItem> getItems() {
         return items;
     }
 
-    public void setItems(String items) {
+    public void setItems(List<OrderItem> items) {
         this.items = items;
     }
 
-    public String getReservationIds() {
+    public List<String> getReservationIds() {
         return reservationIds;
     }
 
-    public void setReservationIds(String reservationIds) {
+    public void setReservationIds(List<String> reservationIds) {
         this.reservationIds = reservationIds;
     }
 

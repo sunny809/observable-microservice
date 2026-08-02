@@ -49,6 +49,14 @@ public class OrderPersistenceAdapter implements OrderRepositoryPort {
         return affected > 0;
     }
 
+    @Override
+    public List<Order> findBySku(String sku) {
+        String skuPattern = "%\"sku\":\"" + sku + "\"%";
+        return repository.findByItemsContainingSku(skuPattern).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
     private OrderEntity toEntity(Order order) {
         OrderEntity entity = new OrderEntity(
                 order.getOrderId(),

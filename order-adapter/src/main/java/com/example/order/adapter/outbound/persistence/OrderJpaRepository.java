@@ -1,5 +1,6 @@
 package com.order.demo.adapter.outbound.persistence;
 
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -20,4 +21,13 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, String> {
                                 @Param("newStatus") String newStatus,
                                 @Param("expectedStatus") String expectedStatus,
                                 @Param("expectedVersion") Long expectedVersion);
+
+    /**
+     * Finds orders containing an item with the given SKU using LIKE for H2 compatibility.
+     * The skuPattern should be formatted as %"sku":"SKU-VALUE"% by the adapter.
+     * In production with PostgreSQL, this can be upgraded to items @> :skuFilter::jsonb
+     * for index-backed queries.
+     */
+    @Query(value = "SELECT * FROM orders WHERE items LIKE :skuPattern", nativeQuery = true)
+    List<OrderEntity> findByItemsContainingSku(@Param("skuPattern") String skuPattern);
 }

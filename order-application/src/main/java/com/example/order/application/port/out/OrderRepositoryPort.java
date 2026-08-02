@@ -2,6 +2,7 @@ package com.order.demo.application.port.out;
 
 import com.order.demo.application.domain.Order;
 import com.order.demo.application.domain.OrderStatus;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -63,4 +64,12 @@ public interface OrderRepositoryPort {
      */
     boolean updateStatusWithVersion(String orderId, OrderStatus newStatus,
                                     OrderStatus expectedStatus, long expectedVersion);
+
+    /**
+     * Finds all orders containing an item with the given SKU.
+     *
+     * @param sku the SKU to search for
+     * @return list of orders containing the SKU
+     */
+    List<Order> findBySku(String sku);
 }

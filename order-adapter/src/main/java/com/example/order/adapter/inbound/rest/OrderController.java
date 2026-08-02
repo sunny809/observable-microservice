@@ -1,6 +1,7 @@
 package com.order.demo.adapter.inbound.rest;
 
 import java.net.URI;
+import java.util.List;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -13,12 +14,17 @@ import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.order.demo.adapter.inbound.rest.aop.Traced;
+import com.order.demo.application.domain.Order;
+import com.order.demo.application.port.in.OrderItem;
+import com.order.demo.application.port.in.OrderSummary;
 import com.order.demo.application.port.in.PlaceOrderCommand;
 import com.order.demo.application.port.in.PlaceOrderUseCase;
 import com.order.demo.adapter.observability.TracerHelper.SpanNames;
@@ -80,6 +86,29 @@ public class OrderController {
         var response = new OrderResponse(result.getOrderId(), result.getStatus(), correlationId);
         URI location = URI.create("/api/v1/orders/" + result.getOrderId());
         return ResponseEntity.created(location).body(response);
+    }
+
+    /**
+     * Finds orders containing a specific SKU.
+     */
+    @GetMapping("/by-sku")
+    @Operation(summary = "Find orders by SKU", description = "Finds all orders containing an item with the given SKU")
+    public List<OrderSummary> findBySku(@RequestParam String sku) {
+        return placeOrderUseCase.findBySku(sku).stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    private OrderSummary toSummary(Order order) {
+        return new OrderSummary(
+                order.getOrderId(),
+                order.getCustomerId(),
+                order.getStatus().name(),
+                order.getCreatedAt(),
+                order.getAllReservationIds().size(),
+                order.getItems().stream().mapToInt(OrderItem::getQuantity).sum(),
+                null, null
+        );
     }
 
 }

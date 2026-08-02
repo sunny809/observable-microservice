@@ -36,4 +36,14 @@ public interface SagaLogPort {
      * @return list of saga log entries for the order
      */
     List<SagaLogEntry> findByOrderId(String orderId);
+
+    /**
+     * Archives completed saga logs older than the given threshold.
+     * Moves matching rows from saga_logs to saga_logs_archive, then deletes them.
+     *
+     * @param threshold only rows with step_status IN ('COMPLETED','FAILED','COMPENSATED')
+     *                  AND completed_at before this threshold are archived
+     * @return the number of rows archived
+     */
+    int archiveCompletedOlderThan(java.time.LocalDateTime threshold);
 }

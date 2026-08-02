@@ -3,6 +3,7 @@ package com.order.demo.adapter.outbound.persistence;
 import com.order.demo.application.port.out.SagaLogEntry;
 import com.order.demo.application.port.out.SagaLogPort;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -155,6 +156,16 @@ public class SagaLogPersistenceAdapter implements SagaLogPort {
                 e.getDetail(), e.getPreviousStatus(), e.getNewStatus(), e.getChangedBy()
             ))
             .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public int archiveCompletedOlderThan(LocalDateTime threshold) {
+        int archived = repository.archiveCompletedOlderThan(threshold);
+        if (archived > 0) {
+            repository.deleteArchivedOlderThan(threshold);
+        }
+        return archived;
     }
 
     /**

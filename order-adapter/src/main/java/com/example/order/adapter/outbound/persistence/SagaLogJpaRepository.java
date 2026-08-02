@@ -1,6 +1,7 @@
 package com.order.demo.adapter.outbound.persistence;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -17,4 +18,20 @@ public interface SagaLogJpaRepository extends JpaRepository<SagaLogEntity, Long>
     Optional<SagaLogEntity> findLatestPendingStep(@Param("orderId") String orderId, @Param("stepName") String stepName);
 
     List<SagaLogEntity> findByOrderIdOrderByCreatedAtAsc(String orderId);
+
+    @Modifying
+    @Query(value = "INSERT INTO saga_logs_archive " +
+           "SELECT id, order_id, step, detail, created_at, saga_type, step_name, step_status, " +
+           "started_at, completed_at, compensation_status, retry_count, next_retry_at, " +
+           "previous_status, new_status, changed_by " +
+           "FROM saga_logs " +
+           "WHERE step_status IN ('COMPLETED','FAILED','COMPENSATED') AND completed_at < :threshold",
+           nativeQuery = true)
+    int archiveCompletedOlderThan(@Param("threshold") LocalDateTime threshold);
+
+    @Modifying
+    @Query(value = "DELETE FROM saga_logs " +
+           "WHERE step_status IN ('COMPLETED','FAILED','COMPENSATED') AND completed_at < :threshold",
+           nativeQuery = true)
+    int deleteArchivedOlderThan(@Param("threshold") LocalDateTime threshold);
 }

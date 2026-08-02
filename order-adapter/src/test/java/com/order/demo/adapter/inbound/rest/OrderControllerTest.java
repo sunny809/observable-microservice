@@ -19,20 +19,23 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import com.order.demo.application.domain.OrderStatus;
 import com.order.demo.application.port.in.OrderPlacedResult;
 import com.order.demo.application.port.in.PlaceOrderUseCase;
+import com.order.demo.application.port.out.OrderQueryPort;
 
 @Tag("unit")
 @Tag("rest-api")
 class OrderControllerTest {
 
     private PlaceOrderUseCase useCase;
+    private OrderQueryPort orderQueryPort;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         useCase = mock(PlaceOrderUseCase.class);
+        orderQueryPort = mock(OrderQueryPort.class);
         when(useCase.placeOrder(any()))
                 .thenReturn(new OrderPlacedResult("ord-123", OrderStatus.CREATED, "mock-trace"));
-        OrderController controller = new OrderController(useCase);
+        OrderController controller = new OrderController(useCase, orderQueryPort);
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 

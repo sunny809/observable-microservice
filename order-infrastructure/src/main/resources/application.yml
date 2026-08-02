@@ -56,6 +56,9 @@ app:
     poll-interval: 5000
   inventory:
     confirmation-delay-seconds: 60
+  lifecycle:
+    enabled: true
+    archive-cron: "0 0 3 * * ?"
   saga:
     timeout:
       check-interval: 60s

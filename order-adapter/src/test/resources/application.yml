@@ -14,3 +14,7 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration
       - org.springframework.boot.autoconfigure.web.reactive.WebFluxAutoConfiguration
+
+app:
+  lifecycle:
+    enabled: false

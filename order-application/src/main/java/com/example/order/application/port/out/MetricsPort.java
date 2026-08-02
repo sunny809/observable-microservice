@@ -93,4 +93,18 @@ public interface MetricsPort {
      * @param count the number of pending events
      */
     void recordOutboxPendingCount(long count);
+
+    /**
+     * Records the number of rows archived by the data lifecycle manager.
+     *
+     * @param count the number of rows archived
+     */
+    void recordLifecycleArchived(int count);
+
+    /**
+     * Records the number of rows deleted by the data lifecycle manager.
+     *
+     * @param count the number of rows deleted
+     */
+    void recordLifecycleDeleted(int count);
 }

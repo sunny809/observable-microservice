@@ -26,6 +26,8 @@ public class OrderMetrics implements MetricsPort {
     private static final String METRIC_OUTBOX_SENT = "outbox.events.sent";
     private static final String METRIC_OUTBOX_FAILED = "outbox.events.failed";
     private static final String METRIC_OUTBOX_PENDING = "outbox.events.pending";
+    private static final String METRIC_LIFECYCLE_ARCHIVED = "lifecycle.rows.archived";
+    private static final String METRIC_LIFECYCLE_DELETED = "lifecycle.rows.deleted";
 
     private final MeterRegistry registry;
 
@@ -89,5 +91,15 @@ public class OrderMetrics implements MetricsPort {
     @Override
     public void recordOutboxPendingCount(long count) {
         registry.gauge(METRIC_OUTBOX_PENDING, count);
+    }
+
+    @Override
+    public void recordLifecycleArchived(int count) {
+        registry.counter(METRIC_LIFECYCLE_ARCHIVED).increment(count);
+    }
+
+    @Override
+    public void recordLifecycleDeleted(int count) {
+        registry.counter(METRIC_LIFECYCLE_DELETED).increment(count);
     }
 }

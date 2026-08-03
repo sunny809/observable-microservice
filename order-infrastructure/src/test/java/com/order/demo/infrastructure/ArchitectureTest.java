@@ -31,7 +31,7 @@ public class ArchitectureTest {
     @ArchTest
     static final ArchRule entity_classes_should_reside_in_adapter_outbound =
             classes().that().areAnnotatedWith(Entity.class)
-                    .should().resideInAnyPackage("..adapter.outbound.persistence..", "..adapter.outbound.outbox..", "..adapter.outbound.query..");
+                    .should().resideInAnyPackage("..adapter.outbound.persistence..", "..adapter.outbound.outbox..", "..adapter.outbound.query..", "..adapter.outbound.snapshot..");
 
     @ArchTest
     static final ArchRule services_should_not_depend_on_jpa_or_webclient =

@@ -1,6 +1,7 @@
 package com.order.demo.adapter.inbound.rest;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,10 +12,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import org.slf4j.MDC;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,6 +30,7 @@ import com.order.demo.application.port.in.OrderItem;
 import com.order.demo.application.port.in.OrderSummary;
 import com.order.demo.application.port.in.PlaceOrderCommand;
 import com.order.demo.application.port.in.PlaceOrderUseCase;
+import com.order.demo.application.port.out.OrderQueryPort;
 import com.order.demo.adapter.observability.TracerHelper.SpanNames;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,9 +49,11 @@ import jakarta.validation.Valid;
 public class OrderController {
 
     private final PlaceOrderUseCase placeOrderUseCase;
+    private final OrderQueryPort orderQueryPort;
 
-    public OrderController(PlaceOrderUseCase placeOrderUseCase) {
+    public OrderController(PlaceOrderUseCase placeOrderUseCase, OrderQueryPort orderQueryPort) {
         this.placeOrderUseCase = placeOrderUseCase;
+        this.orderQueryPort = orderQueryPort;
     }
 
     /**
@@ -97,6 +103,20 @@ public class OrderController {
         return placeOrderUseCase.findBySku(sku).stream()
                 .map(this::toSummary)
                 .toList();
+    }
+
+    /**
+     * Retrieves order state at a specific point in time.
+     */
+    @GetMapping("/{orderId}/at")
+    @Operation(summary = "Get order state at time",
+               description = "Retrieves the order state at a specific point in time using snapshots")
+    public ResponseEntity<OrderSummary> getOrderAt(
+            @PathVariable String orderId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant time) {
+        return orderQueryPort.findOrderAt(orderId, time)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     private OrderSummary toSummary(Order order) {

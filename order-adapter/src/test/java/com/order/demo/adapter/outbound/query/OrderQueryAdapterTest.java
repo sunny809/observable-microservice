@@ -3,6 +3,7 @@ package com.order.demo.adapter.outbound.query;
 import com.order.demo.application.port.in.OrderDetail;
 import com.order.demo.application.port.in.OrderSearchCriteria;
 import com.order.demo.application.port.in.OrderSummary;
+import com.order.demo.application.port.out.OrderSnapshotPort;
 import com.order.demo.application.port.out.SagaLogEntry;
 import com.order.demo.application.port.out.SagaLogPort;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,13 +27,15 @@ class OrderQueryAdapterTest {
 
     private OrderViewJpaRepository viewRepository;
     private SagaLogPort sagaLogPort;
+    private OrderSnapshotPort orderSnapshotPort;
     private OrderQueryAdapter adapter;
 
     @BeforeEach
     void setUp() {
         viewRepository = mock(OrderViewJpaRepository.class);
         sagaLogPort = mock(SagaLogPort.class);
-        adapter = new OrderQueryAdapter(viewRepository, sagaLogPort);
+        orderSnapshotPort = mock(OrderSnapshotPort.class);
+        adapter = new OrderQueryAdapter(viewRepository, sagaLogPort, orderSnapshotPort);
     }
 
     @Test
@@ -94,5 +97,29 @@ class OrderQueryAdapterTest {
 
         assertNotNull(result);
         assertEquals(0, result.getTotalElements());
+    }
+
+    @Test
+    void findOrderAtDelegatesToSnapshotPort() {
+        Instant pointInTime = Instant.parse("2026-08-01T16:00:00Z");
+        OrderSummary summary = new OrderSummary("order-1", null, "WMS_ACKED",
+                Instant.parse("2026-08-01T15:00:00Z"), 0, 0, null, "WMS_ACKED");
+        when(orderSnapshotPort.findSnapshotAt("order-1", pointInTime)).thenReturn(Optional.of(summary));
+
+        Optional<OrderSummary> result = adapter.findOrderAt("order-1", pointInTime);
+
+        assertTrue(result.isPresent());
+        assertEquals("WMS_ACKED", result.get().status());
+        verify(orderSnapshotPort).findSnapshotAt("order-1", pointInTime);
+    }
+
+    @Test
+    void findOrderAtReturnsEmptyWhenNoSnapshot() {
+        Instant pointInTime = Instant.parse("2026-08-01T16:00:00Z");
+        when(orderSnapshotPort.findSnapshotAt("order-1", pointInTime)).thenReturn(Optional.empty());
+
+        Optional<OrderSummary> result = adapter.findOrderAt("order-1", pointInTime);
+
+        assertTrue(result.isEmpty());
     }
 }

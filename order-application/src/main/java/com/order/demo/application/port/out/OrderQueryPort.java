@@ -3,6 +3,7 @@ package com.order.demo.application.port.out;
 import com.order.demo.application.port.in.OrderDetail;
 import com.order.demo.application.port.in.OrderSearchCriteria;
 import com.order.demo.application.port.in.OrderSummary;
+import java.time.Instant;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 
@@ -17,4 +18,13 @@ import org.springframework.data.domain.Page;
 public interface OrderQueryPort {
     Page<OrderSummary> search(OrderSearchCriteria criteria);
     Optional<OrderDetail> findDetail(String orderId);
+
+    /**
+     * Finds the order state at a specific point in time using snapshots.
+     *
+     * @param orderId     the order ID
+     * @param pointInTime the point in time to query
+     * @return the order summary at that time, or empty if no snapshot exists
+     */
+    Optional<OrderSummary> findOrderAt(String orderId, Instant pointInTime);
 }

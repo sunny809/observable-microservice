@@ -45,6 +45,7 @@ class OrderPlacementSagaTest {
     private TmsPort tmsPort;
 
     private CompensationLogPort compensationLogPort;
+    private OrderSnapshotPort orderSnapshotPort;
 
     @BeforeEach
     void setUp() {
@@ -71,8 +72,9 @@ class OrderPlacementSagaTest {
         idempotencyCache = mock(IdempotencyCachePort.class);
         metricsPort = mock(MetricsPort.class);
         compensationLogPort = mock(CompensationLogPort.class);
+        orderSnapshotPort = mock(OrderSnapshotPort.class);
         saga = new OrderPlacementSaga(orderRepository, inventoryPort, sagaLogPort,
-                eventPublisher, wmsPort, tmsPort, confirmationScheduler, transactionTemplate, idempotencyCache, metricsPort, compensationLogPort);
+                eventPublisher, wmsPort, tmsPort, confirmationScheduler, transactionTemplate, idempotencyCache, metricsPort, compensationLogPort, orderSnapshotPort);
     }
 
     private PlaceOrderCommand createCommand() {

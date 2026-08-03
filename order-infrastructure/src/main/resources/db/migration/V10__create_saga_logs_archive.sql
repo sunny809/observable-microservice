@@ -20,3 +20,16 @@ CREATE TABLE saga_logs_archive (
 );
 
 CREATE INDEX idx_saga_logs_archive_order_id ON saga_logs_archive(order_id);
+
+-- Archive table for old order snapshots (older than 90 days)
+CREATE TABLE order_snapshots_archive (
+    id          BIGINT PRIMARY KEY,
+    order_id    VARCHAR(36) NOT NULL,
+    status      VARCHAR(32) NOT NULL,
+    snapshot    TEXT NOT NULL,
+    version     BIGINT NOT NULL,
+    reason      VARCHAR(100),
+    created_at  TIMESTAMP NOT NULL
+);
+
+CREATE INDEX idx_snapshots_archive_order_id ON order_snapshots_archive(order_id);

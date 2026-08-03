@@ -2,6 +2,7 @@ package com.order.demo.adapter.outbound.lifecycle;
 
 import com.order.demo.adapter.outbound.outbox.OutboxEventJpaRepository;
 import com.order.demo.adapter.outbound.persistence.CompensationLogJpaRepository;
+import com.order.demo.adapter.outbound.snapshot.OrderSnapshotJpaRepository;
 import com.order.demo.application.port.out.MetricsPort;
 import com.order.demo.application.port.out.SagaLogPort;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,13 +23,14 @@ class DataLifecycleManagerTest {
     @Mock private SagaLogPort sagaLogPort;
     @Mock private OutboxEventJpaRepository outboxRepo;
     @Mock private CompensationLogJpaRepository compensationRepo;
+    @Mock private OrderSnapshotJpaRepository snapshotRepo;
     @Mock private MetricsPort metricsPort;
 
     private DataLifecycleManager manager;
 
     @BeforeEach
     void setUp() {
-        manager = new DataLifecycleManager(sagaLogPort, outboxRepo, compensationRepo, metricsPort);
+        manager = new DataLifecycleManager(sagaLogPort, outboxRepo, compensationRepo, snapshotRepo, metricsPort);
     }
 
     @Test
@@ -37,13 +39,16 @@ class DataLifecycleManagerTest {
         when(sagaLogPort.archiveCompletedOlderThan(any())).thenReturn(50);
         when(outboxRepo.deleteByStatusAndSentAtBefore(eq("SENT"), any())).thenReturn(30);
         when(compensationRepo.deleteByStatusAndAttemptedAtBefore(eq("COMPLETED"), any())).thenReturn(10);
+        when(snapshotRepo.archiveSnapshotsOlderThan(any())).thenReturn(5);
 
         manager.archiveAndCleanup();
 
         verify(sagaLogPort).archiveCompletedOlderThan(any());
         verify(outboxRepo).deleteByStatusAndSentAtBefore(eq("SENT"), any());
         verify(compensationRepo).deleteByStatusAndAttemptedAtBefore(eq("COMPLETED"), any());
-        verify(metricsPort).recordLifecycleArchived(50);
+        verify(snapshotRepo).archiveSnapshotsOlderThan(any());
+        verify(snapshotRepo).deleteArchivedSnapshotsOlderThan(any());
+        verify(metricsPort).recordLifecycleArchived(55);
         verify(metricsPort).recordLifecycleDeleted(40);
     }
 
@@ -53,9 +58,12 @@ class DataLifecycleManagerTest {
         when(sagaLogPort.archiveCompletedOlderThan(any())).thenReturn(0);
         when(outboxRepo.deleteByStatusAndSentAtBefore(eq("SENT"), any())).thenReturn(0);
         when(compensationRepo.deleteByStatusAndAttemptedAtBefore(eq("COMPLETED"), any())).thenReturn(0);
+        when(snapshotRepo.archiveSnapshotsOlderThan(any())).thenReturn(0);
 
         manager.archiveAndCleanup();
 
+        verify(snapshotRepo).archiveSnapshotsOlderThan(any());
+        verify(snapshotRepo, never()).deleteArchivedSnapshotsOlderThan(any());
         verify(metricsPort).recordLifecycleArchived(0);
         verify(metricsPort).recordLifecycleDeleted(0);
     }

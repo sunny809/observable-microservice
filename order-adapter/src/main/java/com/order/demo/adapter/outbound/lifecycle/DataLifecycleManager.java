@@ -2,6 +2,7 @@ package com.order.demo.adapter.outbound.lifecycle;
 
 import com.order.demo.adapter.outbound.outbox.OutboxEventJpaRepository;
 import com.order.demo.adapter.outbound.persistence.CompensationLogJpaRepository;
+import com.order.demo.adapter.outbound.snapshot.OrderSnapshotJpaRepository;
 import com.order.demo.application.port.out.MetricsPort;
 import com.order.demo.application.port.out.SagaLogPort;
 import org.slf4j.Logger;
@@ -29,15 +30,18 @@ public class DataLifecycleManager {
     private final SagaLogPort sagaLogPort;
     private final OutboxEventJpaRepository outboxRepo;
     private final CompensationLogJpaRepository compensationRepo;
+    private final OrderSnapshotJpaRepository snapshotRepo;
     private final MetricsPort metricsPort;
 
     public DataLifecycleManager(SagaLogPort sagaLogPort,
                                 OutboxEventJpaRepository outboxRepo,
                                 CompensationLogJpaRepository compensationRepo,
+                                OrderSnapshotJpaRepository snapshotRepo,
                                 MetricsPort metricsPort) {
         this.sagaLogPort = sagaLogPort;
         this.outboxRepo = outboxRepo;
         this.compensationRepo = compensationRepo;
+        this.snapshotRepo = snapshotRepo;
         this.metricsPort = metricsPort;
     }
 
@@ -51,10 +55,16 @@ public class DataLifecycleManager {
         int outboxDeleted = outboxRepo.deleteByStatusAndSentAtBefore("SENT", sevenDaysAgo);
         int compensationDeleted = compensationRepo.deleteByStatusAndAttemptedAtBefore("COMPLETED", thirtyDaysAgo);
 
-        metricsPort.recordLifecycleArchived(archived);
+        LocalDateTime ninetyDaysAgo = LocalDateTime.now().minusDays(90);
+        int snapshotsArchived = snapshotRepo.archiveSnapshotsOlderThan(ninetyDaysAgo);
+        if (snapshotsArchived > 0) {
+            snapshotRepo.deleteArchivedSnapshotsOlderThan(ninetyDaysAgo);
+        }
+
+        metricsPort.recordLifecycleArchived(archived + snapshotsArchived);
         metricsPort.recordLifecycleDeleted(outboxDeleted + compensationDeleted);
 
-        log.info("Lifecycle cleanup: archived={} saga logs, deleted={} outbox events, deleted={} compensation logs",
-                archived, outboxDeleted, compensationDeleted);
+        log.info("Lifecycle cleanup: archived={} saga logs, archived={} snapshots, deleted={} outbox events, deleted={} compensation logs",
+                archived, snapshotsArchived, outboxDeleted, compensationDeleted);
     }
 }

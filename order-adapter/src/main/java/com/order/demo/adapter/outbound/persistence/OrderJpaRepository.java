@@ -28,6 +28,6 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, String> {
      * In production with PostgreSQL, this can be upgraded to items @> :skuFilter::jsonb
      * for index-backed queries.
      */
-    @Query(value = "SELECT * FROM orders WHERE items LIKE :skuPattern", nativeQuery = true)
+    @Query(value = "SELECT * FROM orders WHERE items LIKE :skuPattern ESCAPE '\\'", nativeQuery = true)
     List<OrderEntity> findByItemsContainingSku(@Param("skuPattern") String skuPattern);
 }

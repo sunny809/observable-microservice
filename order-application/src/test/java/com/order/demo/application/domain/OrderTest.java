@@ -198,4 +198,44 @@ class OrderTest {
                 OrderStatus.CREATED, "idem-1", "resv-1", Instant.now(), null);
         assertTrue(order.getAllReservationIds().isEmpty());
     }
+
+    // === transitionTo (immutable transition) tests ===
+
+    @Test
+    void testTransitionToReturnsNewOrderWithUpdatedStatus() {
+        Order original = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 1)),
+                OrderStatus.CREATED, "idem-1", "resv-1", Instant.now());
+
+        Order transitioned = original.transitionTo(OrderStatus.WMS_ACKED);
+
+        // New instance has the target status
+        assertEquals(OrderStatus.WMS_ACKED, transitioned.getStatus());
+        // Original instance is unchanged (immutability)
+        assertEquals(OrderStatus.CREATED, original.getStatus());
+        // Core identity fields preserved
+        assertEquals("ord-1", transitioned.getOrderId());
+        assertEquals("cust-1", transitioned.getCustomerId());
+        assertEquals("idem-1", transitioned.getIdempotencyKey());
+        assertEquals("resv-1", transitioned.getReservationId());
+    }
+
+    @Test
+    void testTransitionToPreservesVersion() {
+        Order original = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 1)),
+                OrderStatus.CREATED, "idem-1", "resv-1", Instant.now(), List.of("resv-1"), 5L);
+
+        Order transitioned = original.transitionTo(OrderStatus.WMS_ACKED);
+
+        assertEquals(5L, transitioned.getVersion(), "version must be preserved across transition");
+    }
+
+    @Test
+    void testTransitionToIllegalTransitionThrows() {
+        Order order = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 1)),
+                OrderStatus.CREATED, "idem-1", "resv-1", Instant.now());
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> order.transitionTo(OrderStatus.TMS_DISPATCHED));
+        assertTrue(ex.getMessage().contains("Illegal status transition"));
+    }
 }

@@ -359,4 +359,111 @@ class OrderPlacementSagaTest {
         verify(inventoryPort, never()).release(anyString());
         verify(sagaLogPort).recordCompensation("order-1", "resv-1", "Skip: already compensated");
     }
+
+    @Test
+    @DisplayName("onWmsPickingCompleted should update status to WMS_PICKED, save snapshot, and publish TMS event")
+    void testOnWmsPickingCompletedUpdatesStatusAndPublishesTmsEvent() {
+        InventoryReservation reservation = createReservation();
+        WmsPickingCompletedEvent event = new WmsPickingCompletedEvent(
+                "ord-1", "resv-123", List.of(reservation));
+
+        Order pickedOrder = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 2)),
+                OrderStatus.WMS_ACKED, "idem-key-1", "resv-123", Instant.now());
+        when(orderRepository.findById("ord-1")).thenReturn(Optional.of(pickedOrder));
+
+        saga.onWmsPickingCompleted(event);
+
+        verify(orderRepository).updateStatus(eq("ord-1"), eq(OrderStatus.WMS_PICKED));
+        verify(orderSnapshotPort).saveSnapshot(any(Order.class), eq("WMS_PICKED"));
+        verify(sagaLogPort).recordSagaStepCompleted(eq("ord-1"), eq("WMS_PICKED"), anyString());
+        verify(metricsPort).recordSagaStepDuration(eq("WMS_PICKED"), anyLong(), eq("success"));
+        verify(eventPublisher).publish(any(TmsInstructionRequiredEvent.class));
+    }
+
+    @Test
+    @DisplayName("onTmsRequired with accepted TMS should update status to TMS_DISPATCHED and save snapshot")
+    void testOnTmsAcceptedUpdatesStatusToDispatched() throws Exception {
+        InventoryReservation reservation = createReservation();
+        CountDownLatch latch = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            latch.countDown();
+            return CompletableFuture.completedFuture(null);
+        }).when(orderRepository).updateStatus(eq("ord-1"), eq(OrderStatus.TMS_DISPATCHED));
+
+        TmsInstructionRequiredEvent event = new TmsInstructionRequiredEvent(
+                "ord-1", new TmsShipmentInstruction("ord-1", "resv-123"), List.of(reservation));
+
+        when(tmsPort.sendInstruction(any(TmsShipmentInstruction.class)))
+                .thenReturn(CompletableFuture.completedFuture(new TmsAck(true, "tms-ack-1")));
+
+        Order dispatchedOrder = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 2)),
+                OrderStatus.WMS_PICKED, "idem-key-1", "resv-123", Instant.now());
+        when(orderRepository.findById("ord-1")).thenReturn(Optional.of(dispatchedOrder));
+
+        saga.onTmsRequired(event);
+
+        assertTrue(latch.await(ASYNC_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+
+        verify(tmsPort).sendInstruction(any(TmsShipmentInstruction.class));
+        verify(orderRepository).updateStatus(eq("ord-1"), eq(OrderStatus.TMS_DISPATCHED));
+        verify(orderSnapshotPort).saveSnapshot(any(Order.class), eq("TMS_DISPATCHED"));
+        verify(sagaLogPort).recordSagaStepStarted(eq("ord-1"), eq("TMS_DISPATCHED"));
+        verify(sagaLogPort).recordSagaStepCompleted(eq("ord-1"), eq("TMS_DISPATCHED"), anyString());
+        verify(metricsPort).recordSagaStepDuration(eq("TMS_DISPATCHED"), anyLong(), eq("success"));
+    }
+
+    @Test
+    @DisplayName("onTmsRequired with rejected TMS should release inventory and update status to TMS_REJECTED")
+    void testOnTmsRejectedReleasesInventoryAndUpdatesStatusToTmsRejected() throws Exception {
+        InventoryReservation reservation = createReservation();
+        CountDownLatch latch = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            latch.countDown();
+            return CompletableFuture.completedFuture(null);
+        }).when(inventoryPort).release(anyString());
+
+        TmsInstructionRequiredEvent event = new TmsInstructionRequiredEvent(
+                "ord-1", new TmsShipmentInstruction("ord-1", "resv-123"), List.of(reservation));
+
+        when(tmsPort.sendInstruction(any(TmsShipmentInstruction.class)))
+                .thenReturn(CompletableFuture.completedFuture(new TmsAck(false, "tms-reject-1")));
+
+        saga.onTmsRequired(event);
+
+        assertTrue(latch.await(ASYNC_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+
+        verify(inventoryPort).release("resv-123");
+        verify(orderRepository).updateStatus(eq("ord-1"), eq(OrderStatus.TMS_REJECTED));
+        verify(sagaLogPort).recordSagaStepStarted(eq("ord-1"), eq("TMS_DISPATCHED"));
+        verify(sagaLogPort).recordSagaStepFailed(eq("ord-1"), eq("TMS_DISPATCHED"), anyString());
+        verify(metricsPort).recordSagaStepDuration(eq("TMS_DISPATCHED"), anyLong(), eq("rejected"));
+    }
+
+    @Test
+    @DisplayName("onTmsRequired with transport failure should release inventory and update status to TMS_REJECTED")
+    void testOnTmsTransportFailureReleasesInventoryAndUpdatesStatusToTmsRejected() throws Exception {
+        InventoryReservation reservation = createReservation();
+        CountDownLatch latch = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            latch.countDown();
+            return CompletableFuture.completedFuture(null);
+        }).when(inventoryPort).release(anyString());
+
+        TmsInstructionRequiredEvent event = new TmsInstructionRequiredEvent(
+                "ord-1", new TmsShipmentInstruction("ord-1", "resv-123"), List.of(reservation));
+
+        CompletableFuture<TmsAck> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(new RuntimeException("connection reset"));
+        when(tmsPort.sendInstruction(any(TmsShipmentInstruction.class))).thenReturn(failedFuture);
+
+        saga.onTmsRequired(event);
+
+        assertTrue(latch.await(ASYNC_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+
+        verify(inventoryPort).release("resv-123");
+        verify(orderRepository).updateStatus(eq("ord-1"), eq(OrderStatus.TMS_REJECTED));
+        verify(sagaLogPort).recordSagaStepStarted(eq("ord-1"), eq("TMS_DISPATCHED"));
+        verify(sagaLogPort).recordSagaStepFailed(eq("ord-1"), eq("TMS_DISPATCHED"), anyString());
+        verify(metricsPort).recordSagaStepDuration(eq("TMS_DISPATCHED"), anyLong(), eq("failure"));
+    }
 }

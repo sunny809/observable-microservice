@@ -27,8 +27,8 @@ class OrderItemListConverterTest {
         List<OrderItem> items = List.of(new OrderItem("SKU-1", 3), new OrderItem("SKU-2", 1));
         String json = converter.convertToDatabaseColumn(items);
         assertNotNull(json);
-        assertTrue(json.contains("SKU-1"));
-        assertTrue(json.contains("SKU-2"));
+        // Exact JSON structure: sku then quantity per item, in order
+        assertEquals("[{\"sku\":\"SKU-1\",\"quantity\":3},{\"sku\":\"SKU-2\",\"quantity\":1}]", json);
     }
 
     @Test

@@ -180,12 +180,17 @@ class OrderPlacementSagaTest {
         when(wmsPort.sendInstruction(any(WmsShipmentInstruction.class)))
                 .thenReturn(CompletableFuture.completedFuture(new WmsAck(true, "ack-1")));
 
+        Order acceptedOrder = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 2)),
+                OrderStatus.CREATED, "idem-key-1", "resv-123", Instant.now());
+        when(orderRepository.findById("ord-1")).thenReturn(Optional.of(acceptedOrder));
+
         saga.onWmsRequired(event);
 
         assertTrue(latch.await(ASYNC_TIMEOUT_SECONDS, TimeUnit.SECONDS));
 
         verify(inventoryPort).confirm(any(ConfirmReservationCommand.class));
         verify(orderRepository).updateStatus(eq("ord-1"), eq(OrderStatus.WMS_ACKED));
+        verify(orderSnapshotPort).saveSnapshot(any(Order.class), eq("WMS_ACKED"));
         verify(sagaLogPort).recordSagaStepStarted(eq("ord-1"), eq("WMS_ACKED"));
         verify(sagaLogPort).recordSagaStepCompleted(eq("ord-1"), eq("WMS_ACKED"), anyString());
         verify(metricsPort).recordSagaGap(eq("POST_COMMIT_TO_WMS"), anyLong());
@@ -214,6 +219,7 @@ class OrderPlacementSagaTest {
 
         verify(inventoryPort).release("resv-123");
         verify(orderRepository).updateStatus(eq("ord-1"), eq(OrderStatus.REJECTED));
+        verify(orderSnapshotPort, never()).saveSnapshot(any(), eq("WMS_ACKED"));
         verify(sagaLogPort).recordSagaStepStarted(eq("ord-1"), eq("WMS_ACKED"));
         verify(sagaLogPort).recordSagaStepFailed(eq("ord-1"), eq("WMS_ACKED"), anyString());
         verify(metricsPort).recordSagaGap(eq("POST_COMMIT_TO_WMS"), anyLong());

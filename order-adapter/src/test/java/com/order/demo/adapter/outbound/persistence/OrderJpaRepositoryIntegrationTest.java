@@ -66,6 +66,26 @@ class OrderJpaRepositoryIntegrationTest {
     }
 
     @Test
+    void testFindByItemsContainingSku() {
+        em.getTransaction().begin();
+        OrderEntity entity = new OrderEntity("ord-sku", "cust-1", "idem-sku", "resv-sku",
+                "CREATED", LocalDateTime.now());
+        entity.setItems(List.of(new OrderItem("UNIQUE-SKU", 3), new OrderItem("OTHER-SKU", 1)));
+        em.persist(entity);
+        em.getTransaction().commit();
+
+        em.clear();
+        // The pattern format is %"sku":"SKU-VALUE"%
+        List<OrderEntity> results = em.createNativeQuery(
+                "SELECT * FROM orders WHERE items LIKE :pattern ESCAPE '\\'", OrderEntity.class)
+                .setParameter("pattern", "%\"sku\":\"UNIQUE-SKU\"%")
+                .getResultList();
+
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getId()).isEqualTo("ord-sku");
+    }
+
+    @Test
     void testUpdateStatus() {
         em.getTransaction().begin();
         OrderEntity entity = new OrderEntity("ord-3", "cust-3", "idem-3", "resv-3",

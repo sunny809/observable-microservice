@@ -97,7 +97,7 @@ public class OrderController {
      */
     @GetMapping("/by-sku")
     @Operation(summary = "Find orders by SKU", description = "Finds all orders containing an item with the given SKU")
-    public List<OrderSummary> findBySku(@RequestParam String sku) {
+    public List<OrderSummary> findBySku(@RequestParam("sku") String sku) {
         return orderQueryPort.findBySku(sku);
     }
 
@@ -108,8 +108,8 @@ public class OrderController {
     @Operation(summary = "Get order state at time",
                description = "Retrieves the order state at a specific point in time using snapshots")
     public ResponseEntity<OrderSummary> getOrderAt(
-            @PathVariable String orderId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant time) {
+            @PathVariable("orderId") String orderId,
+            @RequestParam("time") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant time) {
         return orderQueryPort.findOrderAt(orderId, time)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

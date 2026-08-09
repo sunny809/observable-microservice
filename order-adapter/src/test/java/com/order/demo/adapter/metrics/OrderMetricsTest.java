@@ -111,6 +111,26 @@ class OrderMetricsTest {
     }
 
     @Test
+    @DisplayName("recordLifecycleArchived registers lifecycle.rows.archived counter")
+    void recordLifecycleArchived_registersCounter() {
+        metrics.recordLifecycleArchived(50);
+
+        assertThat(meterRegistry.getMeters()).anyMatch(m ->
+                m.getId().getName().equals("lifecycle.rows.archived"));
+        assertThat(meterRegistry.find("lifecycle.rows.archived").counter().count()).isEqualTo(50.0);
+    }
+
+    @Test
+    @DisplayName("recordLifecycleDeleted registers lifecycle.rows.deleted counter")
+    void recordLifecycleDeleted_registersCounter() {
+        metrics.recordLifecycleDeleted(40);
+
+        assertThat(meterRegistry.getMeters()).anyMatch(m ->
+                m.getId().getName().equals("lifecycle.rows.deleted"));
+        assertThat(meterRegistry.find("lifecycle.rows.deleted").counter().count()).isEqualTo(40.0);
+    }
+
+    @Test
     @DisplayName("multiple calls increment counters and record multiple timer samples")
     void multipleCalls_accumulate() {
         metrics.recordOrderPlaced("CREATED");

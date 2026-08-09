@@ -68,6 +68,9 @@ class OrderSnapshotPersistenceAdapterTest {
         entity.setStatus("WMS_ACKED");
         entity.setReason("WMS_ACKED");
         entity.setCreatedAt(LocalDateTime.of(2026, 8, 1, 15, 0));
+        entity.setSnapshot("{\"orderId\":\"order-1\",\"customerId\":\"cust-1\"," +
+                "\"items\":[{\"sku\":\"SKU-1\",\"quantity\":5}]," +
+                "\"allReservationIds\":[\"res-1\",\"res-2\"]}");
 
         when(repository.findLatestSnapshotAt(eq("order-1"), any(LocalDateTime.class)))
                 .thenReturn(Optional.of(entity));
@@ -77,6 +80,9 @@ class OrderSnapshotPersistenceAdapterTest {
 
         assertTrue(result.isPresent());
         assertEquals("WMS_ACKED", result.get().status());
+        assertEquals("cust-1", result.get().customerId());
+        assertEquals(5, result.get().totalQuantity());
+        assertEquals(2, result.get().reservationCount());
     }
 
     @Test

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -18,8 +19,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.order.demo.application.domain.OrderStatus;
 import com.order.demo.application.port.in.OrderPlacedResult;
+import com.order.demo.application.port.in.OrderSummary;
 import com.order.demo.application.port.in.PlaceOrderUseCase;
 import com.order.demo.application.port.out.OrderQueryPort;
+import com.order.demo.adapter.inbound.rest.TraceFilter;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 
 @Tag("unit")
 @Tag("rest-api")
@@ -36,7 +43,9 @@ class OrderControllerTest {
         when(useCase.placeOrder(any()))
                 .thenReturn(new OrderPlacedResult("ord-123", OrderStatus.CREATED, "mock-trace"));
         OrderController controller = new OrderController(useCase, orderQueryPort);
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .addFilter(new TraceFilter())
+                .build();
     }
 
     private String orderJson(String customerId, String idempotencyKey, String itemsJson) {
@@ -71,7 +80,8 @@ class OrderControllerTest {
                         .content(orderJson("cust-3", "idem-3", """
                                 {"sku": "SKU-3", "quantity": 1}
                                 """)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.traceId").value("my-trace-abc"));
     }
 
     @Test
@@ -106,6 +116,46 @@ class OrderControllerTest {
                                 """)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.orderId").value("ord-123"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/orders/by-sku returns orders matching the SKU")
+    void testFindBySkuReturnsMatchingOrders() throws Exception {
+        OrderSummary summary = new OrderSummary("ord-1", "cust-1", "CREATED",
+                Instant.now(), 1, 5, null, null);
+        when(orderQueryPort.findBySku("SKU-1")).thenReturn(List.of(summary));
+
+        mockMvc.perform(get("/api/v1/orders/by-sku")
+                        .param("sku", "SKU-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].orderId").value("ord-1"))
+                .andExpect(jsonPath("$[0].status").value("CREATED"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/orders/{orderId}/at returns order state at time when found")
+    void testGetOrderAtWhenFound() throws Exception {
+        Instant pointInTime = Instant.parse("2026-08-01T16:00:00Z");
+        OrderSummary summary = new OrderSummary("ord-1", "cust-1", "WMS_ACKED",
+                Instant.parse("2026-08-01T15:00:00Z"), 1, 5, null, "WMS_ACKED");
+        when(orderQueryPort.findOrderAt("ord-1", pointInTime)).thenReturn(Optional.of(summary));
+
+        mockMvc.perform(get("/api/v1/orders/ord-1/at")
+                        .param("time", "2026-08-01T16:00:00Z"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderId").value("ord-1"))
+                .andExpect(jsonPath("$.status").value("WMS_ACKED"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/orders/{orderId}/at returns 404 when no snapshot found")
+    void testGetOrderAtWhenNotFound() throws Exception {
+        Instant pointInTime = Instant.parse("2026-08-01T16:00:00Z");
+        when(orderQueryPort.findOrderAt("ord-1", pointInTime)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/v1/orders/ord-1/at")
+                        .param("time", "2026-08-01T16:00:00Z"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

@@ -90,6 +90,30 @@ class SagaLogPersistenceAdapterTest {
     }
 
     @Test
+    @DisplayName("archiveCompletedOlderThan archives and deletes when rows found")
+    void archiveCompletedOlderThan_withRows_foundArchivesAndDeletes() {
+        when(repository.archiveCompletedOlderThan(any())).thenReturn(10);
+
+        int result = adapter.archiveCompletedOlderThan(LocalDateTime.now().minusDays(30));
+
+        assertEquals(10, result);
+        verify(repository).archiveCompletedOlderThan(any());
+        verify(repository).deleteArchivedOlderThan(any());
+    }
+
+    @Test
+    @DisplayName("archiveCompletedOlderThan does not delete when no rows found")
+    void archiveCompletedOlderThan_withNoRows_skipsDelete() {
+        when(repository.archiveCompletedOlderThan(any())).thenReturn(0);
+
+        int result = adapter.archiveCompletedOlderThan(LocalDateTime.now().minusDays(30));
+
+        assertEquals(0, result);
+        verify(repository).archiveCompletedOlderThan(any());
+        verify(repository, never()).deleteArchivedOlderThan(any());
+    }
+
+    @Test
     @DisplayName("recordSagaStepFailed with audit fields should set previousStatus, newStatus, and changedBy")
     void testRecordSagaStepFailedWithAuditFields() {
         when(repository.findLatestPendingStep("order-1", "WMS_ACKED"))

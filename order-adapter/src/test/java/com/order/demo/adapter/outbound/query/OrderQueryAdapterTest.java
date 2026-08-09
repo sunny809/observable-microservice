@@ -1,11 +1,13 @@
 package com.order.demo.adapter.outbound.query;
 
 import com.order.demo.application.port.in.OrderDetail;
+import com.order.demo.application.port.in.OrderItem;
 import com.order.demo.application.port.in.OrderSearchCriteria;
 import com.order.demo.application.port.in.OrderSummary;
 import com.order.demo.application.port.out.OrderSnapshotPort;
 import com.order.demo.application.port.out.SagaLogEntry;
 import com.order.demo.application.port.out.SagaLogPort;
+import com.order.demo.adapter.outbound.persistence.OrderEntity;
 import com.order.demo.adapter.outbound.persistence.OrderJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -19,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -58,6 +61,10 @@ class OrderQueryAdapterTest {
         Optional<OrderDetail> result = adapter.findDetail("order-1");
 
         assertTrue(result.isPresent());
+        assertEquals("cust-1", result.get().summary().customerId());
+        assertEquals("CREATED", result.get().summary().status());
+        assertThat(result.get().sagaSteps()).hasSize(1);
+        assertEquals("ORDER_CREATED", result.get().sagaSteps().get(0).stepName());
         verify(sagaLogPort).findByOrderId("order-1");
     }
 
@@ -85,6 +92,9 @@ class OrderQueryAdapterTest {
         Page<OrderSummary> result = adapter.search(criteria);
 
         assertNotNull(result);
+        assertThat(result.getContent()).hasSize(1);
+        assertEquals("order-1", result.getContent().get(0).orderId());
+        assertEquals("cust-1", result.getContent().get(0).customerId());
         verify(viewRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class),
                 any(Pageable.class));
     }
@@ -105,14 +115,17 @@ class OrderQueryAdapterTest {
     @Test
     void findOrderAtDelegatesToSnapshotPort() {
         Instant pointInTime = Instant.parse("2026-08-01T16:00:00Z");
-        OrderSummary summary = new OrderSummary("order-1", null, "WMS_ACKED",
-                Instant.parse("2026-08-01T15:00:00Z"), 0, 0, null, "WMS_ACKED");
+        OrderSummary summary = new OrderSummary("order-1", "cust-1", "WMS_ACKED",
+                Instant.parse("2026-08-01T15:00:00Z"), 2, 5, null, "WMS_ACKED");
         when(orderSnapshotPort.findSnapshotAt("order-1", pointInTime)).thenReturn(Optional.of(summary));
 
         Optional<OrderSummary> result = adapter.findOrderAt("order-1", pointInTime);
 
         assertTrue(result.isPresent());
         assertEquals("WMS_ACKED", result.get().status());
+        assertEquals("cust-1", result.get().customerId());
+        assertEquals(5, result.get().totalQuantity());
+        assertEquals(2, result.get().reservationCount());
         verify(orderSnapshotPort).findSnapshotAt("order-1", pointInTime);
     }
 
@@ -124,5 +137,28 @@ class OrderQueryAdapterTest {
         Optional<OrderSummary> result = adapter.findOrderAt("order-1", pointInTime);
 
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void findBySkuReturnsOrderSummaries() {
+        OrderEntity entity = new OrderEntity("ord-1", "cust-1", "idem-1", "resv-1",
+                "CREATED", LocalDateTime.now());
+        entity.setItems(List.of(new OrderItem("SKU-1", 3)));
+        when(orderRepository.findByItemsContainingSku(any())).thenReturn(List.of(entity));
+
+        List<OrderSummary> result = adapter.findBySku("SKU-1");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).orderId()).isEqualTo("ord-1");
+        verify(orderRepository).findByItemsContainingSku(any());
+    }
+
+    @Test
+    void findBySkuReturnsEmptyWhenNoMatch() {
+        when(orderRepository.findByItemsContainingSku(any())).thenReturn(List.of());
+
+        List<OrderSummary> result = adapter.findBySku("SKU-999");
+
+        assertThat(result).isEmpty();
     }
 }

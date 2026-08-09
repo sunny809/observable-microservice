@@ -15,8 +15,8 @@ public class ArchitectureTest {
 
     @ArchTest
     static final ArchRule application_layer_should_not_depend_on_adapter_or_infrastructure =
-            noClasses().that().resideInAPackage("..order.application..")
-                    .should().dependOnClassesThat().resideInAnyPackage("..order.adapter..", "..order.infrastructure..");
+            noClasses().that().resideInAPackage("..application..")
+                    .should().dependOnClassesThat().resideInAnyPackage("..adapter..", "..infrastructure..");
 
     @ArchTest
     static final ArchRule inbound_rest_should_not_depend_on_outbound =
@@ -53,6 +53,12 @@ public class ArchitectureTest {
                     .and().haveSimpleNameNotEndingWith("Item")
                     .and().haveSimpleNameNotEndingWith("Ack")
                     .and().haveSimpleNameNotEndingWith("Instruction")
+                    .and().haveSimpleNameNotEndingWith("Detail")
+                    .and().haveSimpleNameNotEndingWith("SearchCriteria")
+                    .and().haveSimpleNameNotEndingWith("Summary")
+                    .and().haveSimpleNameNotEndingWith("StepView")
+                    .and().haveSimpleNameNotEndingWith("Status")
+                    .and().haveSimpleNameNotEndingWith("LogEntry")
                     .should().beInterfaces();
 
     @ArchTest

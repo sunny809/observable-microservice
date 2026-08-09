@@ -131,6 +131,36 @@ class OrderMetricsTest {
     }
 
     @Test
+    @DisplayName("recordOutboxEventSent registers outbox.events.sent counter with eventType tag")
+    void recordOutboxEventSent_registersCounter() {
+        metrics.recordOutboxEventSent("WmsInstructionRequiredEvent");
+
+        assertThat(meterRegistry.getMeters()).anyMatch(m ->
+                m.getId().getName().equals("outbox.events.sent")
+                && "WmsInstructionRequiredEvent".equals(m.getId().getTag("eventType")));
+    }
+
+    @Test
+    @DisplayName("recordOutboxEventFailed registers outbox.events.failed counter with eventType tag")
+    void recordOutboxEventFailed_registersCounter() {
+        metrics.recordOutboxEventFailed("WmsInstructionRequiredEvent");
+
+        assertThat(meterRegistry.getMeters()).anyMatch(m ->
+                m.getId().getName().equals("outbox.events.failed")
+                && "WmsInstructionRequiredEvent".equals(m.getId().getTag("eventType")));
+    }
+
+    @Test
+    @DisplayName("recordOutboxPendingCount registers outbox.events.pending gauge")
+    void recordOutboxPendingCount_registersGauge() {
+        metrics.recordOutboxPendingCount(42);
+
+        assertThat(meterRegistry.getMeters()).anyMatch(m ->
+                m.getId().getName().equals("outbox.events.pending"));
+        assertThat(meterRegistry.find("outbox.events.pending").gauge().value()).isEqualTo(42.0);
+    }
+
+    @Test
     @DisplayName("multiple calls increment counters and record multiple timer samples")
     void multipleCalls_accumulate() {
         metrics.recordOrderPlaced("CREATED");

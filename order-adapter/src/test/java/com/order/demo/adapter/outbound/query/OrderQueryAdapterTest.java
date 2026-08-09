@@ -113,6 +113,70 @@ class OrderQueryAdapterTest {
     }
 
     @Test
+    void search_withCustomerIdFilter() {
+        Page<OrderViewEntity> emptyPage = new PageImpl<>(List.of());
+        when(viewRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class),
+                any(Pageable.class))).thenReturn(emptyPage);
+
+        OrderSearchCriteria criteria = new OrderSearchCriteria("cust-1", null, null, null, 0, 20);
+        Page<OrderSummary> result = adapter.search(criteria);
+
+        assertNotNull(result);
+        verify(viewRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class),
+                any(Pageable.class));
+    }
+
+    @Test
+    void search_withStatusFilter() {
+        Page<OrderViewEntity> emptyPage = new PageImpl<>(List.of());
+        when(viewRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class),
+                any(Pageable.class))).thenReturn(emptyPage);
+
+        OrderSearchCriteria criteria = new OrderSearchCriteria(null, "CREATED", null, null, 0, 20);
+        Page<OrderSummary> result = adapter.search(criteria);
+
+        assertNotNull(result);
+        verify(viewRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class),
+                any(Pageable.class));
+    }
+
+    @Test
+    void search_withDateRangeFilter() {
+        Page<OrderViewEntity> emptyPage = new PageImpl<>(List.of());
+        when(viewRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class),
+                any(Pageable.class))).thenReturn(emptyPage);
+
+        OrderSearchCriteria criteria = new OrderSearchCriteria(
+                null, null,
+                Instant.parse("2026-08-01T00:00:00Z"),
+                Instant.parse("2026-08-02T00:00:00Z"),
+                0, 20);
+        Page<OrderSummary> result = adapter.search(criteria);
+
+        assertNotNull(result);
+        verify(viewRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class),
+                any(Pageable.class));
+    }
+
+    @Test
+    void search_withAllFilters() {
+        Page<OrderViewEntity> emptyPage = new PageImpl<>(List.of());
+        when(viewRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class),
+                any(Pageable.class))).thenReturn(emptyPage);
+
+        OrderSearchCriteria criteria = new OrderSearchCriteria(
+                "cust-1", "WMS_ACKED",
+                Instant.parse("2026-08-01T00:00:00Z"),
+                Instant.parse("2026-08-02T00:00:00Z"),
+                0, 20);
+        Page<OrderSummary> result = adapter.search(criteria);
+
+        assertNotNull(result);
+        verify(viewRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class),
+                any(Pageable.class));
+    }
+
+    @Test
     void findOrderAtDelegatesToSnapshotPort() {
         Instant pointInTime = Instant.parse("2026-08-01T16:00:00Z");
         OrderSummary summary = new OrderSummary("order-1", "cust-1", "WMS_ACKED",
@@ -144,12 +208,15 @@ class OrderQueryAdapterTest {
         OrderEntity entity = new OrderEntity("ord-1", "cust-1", "idem-1", "resv-1",
                 "CREATED", LocalDateTime.now());
         entity.setItems(List.of(new OrderItem("SKU-1", 3)));
+        entity.setReservationIds(List.of("resv-1", "resv-2"));
         when(orderRepository.findByItemsContainingSku(any())).thenReturn(List.of(entity));
 
         List<OrderSummary> result = adapter.findBySku("SKU-1");
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).orderId()).isEqualTo("ord-1");
+        assertThat(result.get(0).totalQuantity()).isEqualTo(3);
+        assertThat(result.get(0).reservationCount()).isEqualTo(2);
         verify(orderRepository).findByItemsContainingSku(any());
     }
 

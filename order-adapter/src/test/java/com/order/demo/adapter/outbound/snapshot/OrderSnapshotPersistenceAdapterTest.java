@@ -96,4 +96,70 @@ class OrderSnapshotPersistenceAdapterTest {
 
         assertTrue(result.isEmpty());
     }
+
+    @Test
+    @DisplayName("findSnapshotAt with blank snapshot fields returns summary with null/0 fields")
+    void findSnapshotAt_withBlankSnapshotFields() {
+        OrderSnapshotEntity entity = new OrderSnapshotEntity();
+        entity.setOrderId("order-1");
+        entity.setStatus("CREATED");
+        entity.setReason("ORDER_CREATED");
+        entity.setCreatedAt(LocalDateTime.of(2026, 8, 1, 15, 0));
+        entity.setSnapshot(" ");
+
+        when(repository.findLatestSnapshotAt(eq("order-1"), any(LocalDateTime.class)))
+                .thenReturn(Optional.of(entity));
+
+        Optional<OrderSummary> result = adapter.findSnapshotAt("order-1",
+                Instant.parse("2026-08-01T16:00:00Z"));
+
+        assertTrue(result.isPresent());
+        assertNull(result.get().customerId());
+        assertEquals(0, result.get().reservationCount());
+        assertEquals(0, result.get().totalQuantity());
+    }
+
+    @Test
+    @DisplayName("findSnapshotAt with null snapshot returns summary with null/0 fields")
+    void findSnapshotAt_withNullSnapshot() {
+        OrderSnapshotEntity entity = new OrderSnapshotEntity();
+        entity.setOrderId("order-1");
+        entity.setStatus("CREATED");
+        entity.setReason("ORDER_CREATED");
+        entity.setCreatedAt(LocalDateTime.of(2026, 8, 1, 15, 0));
+        entity.setSnapshot(null);
+
+        when(repository.findLatestSnapshotAt(eq("order-1"), any(LocalDateTime.class)))
+                .thenReturn(Optional.of(entity));
+
+        Optional<OrderSummary> result = adapter.findSnapshotAt("order-1",
+                Instant.parse("2026-08-01T16:00:00Z"));
+
+        assertTrue(result.isPresent());
+        assertNull(result.get().customerId());
+        assertEquals(0, result.get().reservationCount());
+        assertEquals(0, result.get().totalQuantity());
+    }
+
+    @Test
+    @DisplayName("findSnapshotAt with invalid JSON does not throw and returns null/0 fields")
+    void findSnapshotAt_withInvalidJson() {
+        OrderSnapshotEntity entity = new OrderSnapshotEntity();
+        entity.setOrderId("order-1");
+        entity.setStatus("CREATED");
+        entity.setReason("ORDER_CREATED");
+        entity.setCreatedAt(LocalDateTime.of(2026, 8, 1, 15, 0));
+        entity.setSnapshot("not-valid-json");
+
+        when(repository.findLatestSnapshotAt(eq("order-1"), any(LocalDateTime.class)))
+                .thenReturn(Optional.of(entity));
+
+        Optional<OrderSummary> result = adapter.findSnapshotAt("order-1",
+                Instant.parse("2026-08-01T16:00:00Z"));
+
+        assertTrue(result.isPresent());
+        assertNull(result.get().customerId());
+        assertEquals(0, result.get().reservationCount());
+        assertEquals(0, result.get().totalQuantity());
+    }
 }

@@ -1,4 +1,4 @@
-package com.example.order.infrastructure.adapter;
+package com.order.demo.infrastructure.adapter;
 
 import com.order.demo.application.port.out.DomainEventPublisher;
 import org.springframework.context.ApplicationEventPublisher;

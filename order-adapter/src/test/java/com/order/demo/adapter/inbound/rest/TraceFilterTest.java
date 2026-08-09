@@ -1,4 +1,4 @@
-package com.example.order.adapter.inbound.rest;
+package com.order.demo.adapter.inbound.rest;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockFilterChain;

@@ -453,9 +453,4 @@ public class OrderPlacementSaga implements PlaceOrderUseCase {
     private String compensationIdempotencyKey(String orderId, String stepName, String reservationId) {
         return String.format("compensate:%s:%s:%s", orderId, stepName, reservationId);
     }
-
-    @Override
-    public List<Order> findBySku(String sku) {
-        return orderRepository.findBySku(sku);
-    }
 }

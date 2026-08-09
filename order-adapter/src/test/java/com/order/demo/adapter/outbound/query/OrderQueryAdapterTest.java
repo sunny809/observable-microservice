@@ -6,6 +6,7 @@ import com.order.demo.application.port.in.OrderSummary;
 import com.order.demo.application.port.out.OrderSnapshotPort;
 import com.order.demo.application.port.out.SagaLogEntry;
 import com.order.demo.application.port.out.SagaLogPort;
+import com.order.demo.adapter.outbound.persistence.OrderJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ class OrderQueryAdapterTest {
     private OrderViewJpaRepository viewRepository;
     private SagaLogPort sagaLogPort;
     private OrderSnapshotPort orderSnapshotPort;
+    private OrderJpaRepository orderRepository;
     private OrderQueryAdapter adapter;
 
     @BeforeEach
@@ -35,7 +37,8 @@ class OrderQueryAdapterTest {
         viewRepository = mock(OrderViewJpaRepository.class);
         sagaLogPort = mock(SagaLogPort.class);
         orderSnapshotPort = mock(OrderSnapshotPort.class);
-        adapter = new OrderQueryAdapter(viewRepository, sagaLogPort, orderSnapshotPort);
+        orderRepository = mock(OrderJpaRepository.class);
+        adapter = new OrderQueryAdapter(viewRepository, sagaLogPort, orderSnapshotPort, orderRepository);
     }
 
     @Test

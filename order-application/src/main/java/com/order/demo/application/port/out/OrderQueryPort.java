@@ -4,6 +4,7 @@ import com.order.demo.application.port.in.OrderDetail;
 import com.order.demo.application.port.in.OrderSearchCriteria;
 import com.order.demo.application.port.in.OrderSummary;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 
@@ -18,6 +19,14 @@ import org.springframework.data.domain.Page;
 public interface OrderQueryPort {
     Page<OrderSummary> search(OrderSearchCriteria criteria);
     Optional<OrderDetail> findDetail(String orderId);
+
+    /**
+     * Finds all orders containing an item with the given SKU.
+     *
+     * @param sku the SKU to search for
+     * @return list of order summaries containing the SKU
+     */
+    List<OrderSummary> findBySku(String sku);
 
     /**
      * Finds the order state at a specific point in time using snapshots.

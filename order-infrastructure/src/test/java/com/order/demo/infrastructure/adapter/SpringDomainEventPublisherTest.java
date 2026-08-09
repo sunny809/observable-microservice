@@ -1,4 +1,4 @@
-package com.example.order.infrastructure.adapter;
+package com.order.demo.infrastructure.adapter;
 
 import com.order.demo.application.domain.InventoryReservation;
 import com.order.demo.application.domain.ReservationStatus;

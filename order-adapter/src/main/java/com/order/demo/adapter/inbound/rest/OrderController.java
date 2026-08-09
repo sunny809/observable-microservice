@@ -25,8 +25,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.order.demo.adapter.inbound.rest.aop.Traced;
-import com.order.demo.application.domain.Order;
-import com.order.demo.application.port.in.OrderItem;
 import com.order.demo.application.port.in.OrderSummary;
 import com.order.demo.application.port.in.PlaceOrderCommand;
 import com.order.demo.application.port.in.PlaceOrderUseCase;
@@ -100,9 +98,7 @@ public class OrderController {
     @GetMapping("/by-sku")
     @Operation(summary = "Find orders by SKU", description = "Finds all orders containing an item with the given SKU")
     public List<OrderSummary> findBySku(@RequestParam String sku) {
-        return placeOrderUseCase.findBySku(sku).stream()
-                .map(this::toSummary)
-                .toList();
+        return orderQueryPort.findBySku(sku);
     }
 
     /**
@@ -117,18 +113,6 @@ public class OrderController {
         return orderQueryPort.findOrderAt(orderId, time)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-    }
-
-    private OrderSummary toSummary(Order order) {
-        return new OrderSummary(
-                order.getOrderId(),
-                order.getCustomerId(),
-                order.getStatus().name(),
-                order.getCreatedAt(),
-                order.getAllReservationIds().size(),
-                order.getItems().stream().mapToInt(OrderItem::getQuantity).sum(),
-                null, null
-        );
     }
 
 }

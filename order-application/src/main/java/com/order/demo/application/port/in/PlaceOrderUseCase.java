@@ -1,8 +1,5 @@
 package com.order.demo.application.port.in;
 
-import com.order.demo.application.domain.Order;
-import java.util.List;
-
 /**
  * Inbound port for placing orders.
  *
@@ -24,12 +21,4 @@ public interface PlaceOrderUseCase {
      * @throws com.order.demo.application.domain.InsufficientInventoryException if any item cannot be reserved
      */
     OrderPlacedResult placeOrder(PlaceOrderCommand command);
-
-    /**
-     * Finds all orders containing an item with the given SKU.
-     *
-     * @param sku the SKU to search for
-     * @return list of orders containing the SKU
-     */
-    List<Order> findBySku(String sku);
 }

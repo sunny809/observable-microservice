@@ -5,6 +5,7 @@ import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import jakarta.persistence.Entity;
 
+import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.nameEndingWith;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
@@ -39,6 +40,15 @@ public class ArchitectureTest {
                     .should().dependOnClassesThat().resideInAnyPackage("org.springframework.data.jpa..", "org.springframework.web.reactive.function.client..", "jakarta.persistence..", "org.springframework.web.client.." );
 
     @ArchTest
+    static final ArchRule ports_and_domain_should_not_depend_on_jpa_or_webclient =
+            noClasses().that().resideInAnyPackage("..port..", "..domain..")
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                            "org.springframework.data.jpa..",
+                            "jakarta.persistence..",
+                            "org.springframework.web.reactive.function.client..",
+                            "org.springframework.web.client..");
+
+    @ArchTest
     static final ArchRule domain_events_should_be_immutable =
             classes().that().resideInAPackage("..domain..")
                     .and().haveSimpleNameEndingWith("Event")
@@ -47,18 +57,10 @@ public class ArchitectureTest {
     @ArchTest
     static final ArchRule ports_should_be_interfaces =
             classes().that().resideInAPackage("..port..")
-                    .and().haveSimpleNameNotEndingWith("Command")
-                    .and().haveSimpleNameNotEndingWith("Request")
-                    .and().haveSimpleNameNotEndingWith("Result")
-                    .and().haveSimpleNameNotEndingWith("Item")
-                    .and().haveSimpleNameNotEndingWith("Ack")
-                    .and().haveSimpleNameNotEndingWith("Instruction")
-                    .and().haveSimpleNameNotEndingWith("Detail")
-                    .and().haveSimpleNameNotEndingWith("SearchCriteria")
-                    .and().haveSimpleNameNotEndingWith("Summary")
-                    .and().haveSimpleNameNotEndingWith("StepView")
-                    .and().haveSimpleNameNotEndingWith("Status")
-                    .and().haveSimpleNameNotEndingWith("LogEntry")
+                    .and(nameEndingWith("Port")
+                            .or(nameEndingWith("UseCase"))
+                            .or(nameEndingWith("Publisher"))
+                            .or(nameEndingWith("Scheduler")))
                     .should().beInterfaces();
 
     @ArchTest

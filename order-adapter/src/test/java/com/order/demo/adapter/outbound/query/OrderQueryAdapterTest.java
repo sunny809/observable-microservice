@@ -12,6 +12,7 @@ import com.order.demo.adapter.outbound.persistence.OrderJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -227,5 +228,70 @@ class OrderQueryAdapterTest {
         List<OrderSummary> result = adapter.findBySku("SKU-999");
 
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findBySkuPassesPlainSkuThroughUnchanged() {
+        when(orderRepository.findByItemsContainingSku(any())).thenReturn(List.of());
+
+        adapter.findBySku("SKU-1");
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(orderRepository).findByItemsContainingSku(captor.capture());
+        assertEquals("%\"sku\":\"SKU-1\"%", captor.getValue());
+    }
+
+    @Test
+    void findBySkuEscapesPercentWildcard() {
+        when(orderRepository.findByItemsContainingSku(any())).thenReturn(List.of());
+
+        adapter.findBySku("100%OFF");
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(orderRepository).findByItemsContainingSku(captor.capture());
+        String pattern = captor.getValue();
+        assertThat(pattern).contains("100\\%OFF");        // the % is escaped to \%
+        assertThat(pattern).doesNotContain("100%OFF");   // no unescaped % inside the value
+    }
+
+    @Test
+    void findBySkuEscapesUnderscoreWildcard() {
+        when(orderRepository.findByItemsContainingSku(any())).thenReturn(List.of());
+
+        adapter.findBySku("promo_code");
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(orderRepository).findByItemsContainingSku(captor.capture());
+        String pattern = captor.getValue();
+        assertThat(pattern).contains("promo\\_code");     // the _ is escaped to \_
+        assertThat(pattern).doesNotContain("promo_code"); // no unescaped _ inside the value
+    }
+
+    @Test
+    void findBySkuJsonEncodesBackslashBeforeLikeEscaping() {
+        when(orderRepository.findByItemsContainingSku(any())).thenReturn(List.of());
+
+        adapter.findBySku("a\\b"); // SKU value: a\b
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(orderRepository).findByItemsContainingSku(captor.capture());
+        // Jackson stores a\b as "sku":"a\\b" (two physical backslashes). Each literal
+        // backslash is \\ under ESCAPE '\', so the escaped value is a\\\\b (four) which
+        // matches the two stored. If the JSON-encoding step were missing, the pattern
+        // would contain a\\b (two) instead — a false negative against the stored row.
+        assertThat(captor.getValue()).contains("a\\\\\\\\b"); // a + four backslashes + b
+    }
+
+    @Test
+    void findBySkuJsonEncodesDoubleQuoteBeforeLikeEscaping() {
+        when(orderRepository.findByItemsContainingSku(any())).thenReturn(List.of());
+
+        adapter.findBySku("a\"b"); // SKU value: a"b
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(orderRepository).findByItemsContainingSku(captor.capture());
+        // Jackson stores a"b as "sku":"a\"b"; the \ is then LIKE-escaped to \\, giving
+        // a\\"b in the pattern (a + two backslashes + " + b) so it matches the stored row.
+        assertThat(captor.getValue()).contains("a\\\\\"b"); // a + two backslashes + " + b
     }
 }

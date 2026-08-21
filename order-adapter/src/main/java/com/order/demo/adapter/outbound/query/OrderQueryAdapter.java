@@ -1,5 +1,7 @@
 package com.order.demo.adapter.outbound.query;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.order.demo.application.port.in.OrderDetail;
 import com.order.demo.application.port.in.OrderItem;
 import com.order.demo.application.port.in.OrderSearchCriteria;
@@ -23,6 +25,13 @@ import java.util.Optional;
 
 @Component
 public class OrderQueryAdapter implements OrderQueryPort {
+
+    /**
+     * Reuses default Jackson configuration so values are encoded identically to
+     * {@link com.order.demo.adapter.outbound.persistence.OrderItemListConverter},
+     * which is what serializes the {@code items} column that SKU queries scan.
+     */
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final OrderViewJpaRepository viewRepository;
     private final SagaLogPort sagaLogPort;
@@ -80,12 +89,41 @@ public class OrderQueryAdapter implements OrderQueryPort {
 
     @Override
     public List<OrderSummary> findBySku(String sku) {
-        // Escape LIKE wildcard chars and JSON special chars in the SKU value
-        String escaped = sku.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        // The items column stores each order's items as a JSON array serialized by
+        // OrderItemListConverter (Jackson). Scanning that text with a LIKE substring
+        // is fragile in two ways, both handled here:
+        //   1. Wildcard injection: a % or _ in the SKU would act as a LIKE wildcard.
+        //      We escape them for the ESCAPE '\' clause (see OrderJpaRepository).
+        //   2. JSON encoding mismatch: Jackson JSON-encodes the stored value, so a SKU
+        //      containing \ or " is persisted as \\ or \" (two physical characters). To
+        //      match the stored text we JSON-encode the search value the same way
+        //      Jackson does BEFORE applying the LIKE escape. (PostgreSQL JSONB @> is
+        //      the eventual replacement; see OrderJpaRepository.findByItemsContainingSku.)
+        String jsonValue = jsonEncodeValue(sku);
+        String escaped = jsonValue.replace("\\", "\\\\")
+                                  .replace("%", "\\%")
+                                  .replace("_", "\\_");
         String skuPattern = "%\"sku\":\"" + escaped + "\"%";
         return orderRepository.findByItemsContainingSku(skuPattern).stream()
                 .map(this::toSummary)
                 .toList();
+    }
+
+    /**
+     * Returns the JSON-encoded content of {@code value} exactly as Jackson writes it
+     * into the items column (surrounding quotes stripped). This keeps the LIKE pattern
+     * aligned with the stored text for values containing {@code \} or {@code "}, which
+     * Jackson otherwise stores as {@code \\} or {@code \"}.
+     */
+    private static String jsonEncodeValue(String value) {
+        try {
+            String json = MAPPER.writeValueAsString(value);
+            return json.substring(1, json.length() - 1);
+        } catch (JsonProcessingException e) {
+            // A plain String value never fails JSON serialization; degrade to the raw
+            // value rather than letting a serialization hiccup break the search.
+            return value;
+        }
     }
 
     @Override

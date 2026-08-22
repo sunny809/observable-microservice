@@ -16,6 +16,9 @@
         <opentelemetry.version>1.37.0</opentelemetry.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- JaCoCo LINE coverage floor. Defaulted high (0.85); order-adapter
+             overrides to 0.80 until its coverage is raised above 85%. -->
+        <jacoco.line.minimum>0.85</jacoco.line.minimum>
     </properties>
 
     <modules>
@@ -156,7 +159,7 @@
                                             <limit>
                                                 <counter>LINE</counter>
                                                 <value>COVEREDRATIO</value>
-                                                <minimum>0.75</minimum>
+                                                <minimum>${jacoco.line.minimum}</minimum>
                                             </limit>
                                         </limits>
                                     </rule>

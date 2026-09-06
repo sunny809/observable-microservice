@@ -2,6 +2,7 @@ package com.order.demo.adapter.inbound.rest;
 
 import com.order.demo.application.domain.InventoryReservation;
 import com.order.demo.application.domain.Order;
+import com.order.demo.application.domain.OrderNotFoundException;
 import com.order.demo.application.domain.OrderStatus;
 import com.order.demo.application.domain.WmsPickingCompletedEvent;
 import com.order.demo.application.port.in.OrderItem;

@@ -43,13 +43,13 @@ This is a **hexagonal architecture** (ports and adapters) Spring Boot order serv
 
 ### Domain Model
 
-- **Order** - Aggregate root with status transitions: `CREATED` → `WMS_ACKED` → `WMS_PICKED` → `TMS_DISPATCHED`, with `REJECTED` / `TMS_REJECTED` failure branches
+- **Order** - Aggregate root with status transitions: `CREATED` → `WMS_ACKED` → `WMS_PICKED` → `TMS_DISPATCHED`, failure branches `REJECTED` / `TMS_REJECTED`, and a `CANCELLED` terminal state reachable from any pre-dispatch state (`CREATED`/`RESERVED`/`WMS_ACKED`/`WMS_PICKED`)
 - **InventoryReservation** - Immutable value object with status (`PENDING`, `CONFIRMED`, `RELEASED`)
 - **WmsShipmentInstruction / TmsShipmentInstruction** - Event payloads for service integration
 
 ### Key Patterns
 
-1. **Saga Pattern** - `OrderPlacementSaga` orchestrates order creation, inventory reservation, WMS instruction, WMS picking, and TMS dispatch with compensating transactions
+1. **Saga Pattern** - `OrderPlacementSaga` orchestrates order creation, inventory reservation, WMS instruction, WMS picking, and TMS dispatch with compensating transactions; `OrderCancellationSaga` runs the reverse flow (release inventory, void WMS) to cancel an order before dispatch
 2. **Idempotency** - Dual-layer deduplication via Caffeine cache (fast path) and database unique constraint (source of truth)
 3. **Circuit Breakers** - Resilience4j for all external service calls with per-service thresholds
 4. **Distributed Tracing** - OpenTelemetry with W3C traceparent / B3 propagation, exported via OTLP to Jaeger
@@ -144,14 +144,34 @@ order-infrastructure → order-adapter → order-application → (removed, merge
 - ✅ Independent versioning allows SDK to evolve without affecting the blueprint
 - ⚠️ Development requires building both projects (mitigated by Makefile + CI scripts)
 
-### ADR-6: JaCoCo Coverage Threshold at 80%
+### ADR-6: JaCoCo Coverage Threshold (85% default, per-module override)
 
-**Context:** Initial threshold was 60%, which was too low to prevent coverage regression as the codebase grew.
+**Context:** Initial threshold was 60%, raised to 75% in `pom.xml`, but the docs claimed 80% — the doc and the build disagreed, and both sat below the team's actual 85%+ standard.
 
-**Decision:** Raise threshold to 80% line coverage per module.
+**Decision:** Enforce LINE coverage via the `jacoco.line.minimum` property. Default `0.85` in the root pom; modules that cannot yet meet 85% override the property downward in their own pom. Currently `order-adapter` overrides to `0.80` (its coverage is 83.8%); `order-application` (95.1%) and `order-infrastructure` (87.8%) inherit the 0.85 default.
 
 **Consequences:**
 
-- ✅ Prevents coverage regression on new code
+- ✅ Build-enforced floor matches the documented standard
+- ✅ New modules inherit the 0.85 default — a laggard must opt out explicitly
 - ⚠️ Requires maintaining tests for all new code paths
 - ⚠️ Spring Boot auto-configuration classes are excluded from the threshold
+
+### ADR-7: Order Cancellation Saga
+
+**Context:** The blueprint only demonstrated the forward order-placement flow. A complete saga story also needs the reverse flow — cancelling an order and undoing its side effects (inventory reservation, WMS instruction) safely and idempotently.
+
+**Decision:** Implement `OrderCancellationSaga` as a synchronous, `@Transactional` use case that compensates the placement saga:
+
+1. Release every reserved inventory item, with per-reservation idempotency via the compensation log.
+2. Void the WMS instruction if the order reached `WMS_ACKED`/`WMS_PICKED` (best-effort; a void failure does not block cancellation).
+3. Transition the order to a new `CANCELLED` terminal state, guarded by the `ALLOWED_TRANSITIONS` map so only pre-dispatch states may be cancelled.
+
+Cancellation is idempotent (a second cancel of an already-cancelled order is a no-op) and requires a `customerId` for ownership validation.
+
+**Consequences:**
+
+- ✅ Demonstrates saga compensation in the reverse direction, closing the "how do I undo a multi-step async process" gap
+- ✅ Reuses existing compensation infrastructure (compensation log, saga log, snapshots) rather than introducing new mechanisms
+- ⚠️ WMS void is best-effort — inventory release remains the authoritative compensation
+- ⚠️ Orders already `TMS_DISPATCHED` cannot be cancelled; that is a separate "recall" flow, out of scope

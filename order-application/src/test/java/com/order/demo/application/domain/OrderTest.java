@@ -238,4 +238,33 @@ class OrderTest {
                 () -> order.transitionTo(OrderStatus.TMS_DISPATCHED));
         assertTrue(ex.getMessage().contains("Illegal status transition"));
     }
+
+    // === CANCELLED transition tests ===
+
+    @Test
+    void testTransitionToCancelledAllowed() {
+        Order original = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 1)),
+                OrderStatus.WMS_ACKED, "idem-1", "resv-1", Instant.now(), List.of("resv-1"), 3L);
+
+        Order cancelled = original.transitionTo(OrderStatus.CANCELLED);
+
+        assertEquals(OrderStatus.CANCELLED, cancelled.getStatus());
+        assertEquals(OrderStatus.WMS_ACKED, original.getStatus(), "original must remain unchanged");
+        assertEquals(3L, cancelled.getVersion(), "version must be preserved across transition");
+    }
+
+    @Test
+    void testTransitionToCancelledFromNonCancellableStatesThrows() {
+        List<OrderStatus> nonCancellable = List.of(
+                OrderStatus.TMS_DISPATCHED, OrderStatus.REJECTED,
+                OrderStatus.TMS_REJECTED, OrderStatus.CANCELLED);
+        for (OrderStatus status : nonCancellable) {
+            Order order = new Order("ord-1", "cust-1", List.of(new OrderItem("SKU-1", 1)),
+                    status, "idem-1", "resv-1", Instant.now());
+            IllegalStateException ex = assertThrows(IllegalStateException.class,
+                    () -> order.transitionTo(OrderStatus.CANCELLED),
+                    "transition from " + status + " to CANCELLED should be illegal");
+            assertTrue(ex.getMessage().contains("Illegal status transition"));
+        }
+    }
 }

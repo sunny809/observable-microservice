@@ -24,4 +24,15 @@ public interface WmsPort {
      * @return a future that completes with the WMS acknowledgment
      */
     CompletableFuture<WmsAck> sendInstruction(WmsShipmentInstruction instruction);
+
+    /**
+     * Voids a previously sent shipment instruction, instructing the WMS to
+     * abandon the shipment. Used by the cancellation saga when an order is
+     * cancelled after the WMS has been instructed.
+     *
+     * @param instruction the shipment instruction to void (order + reservation IDs)
+     * @return a future that completes when the void is acknowledged, or fails if
+     *         the WMS cannot be reached
+     */
+    CompletableFuture<Void> cancelInstruction(WmsShipmentInstruction instruction);
 }

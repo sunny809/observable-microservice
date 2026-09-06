@@ -72,6 +72,7 @@ POST /api/v1/orders
 
 - Async callbacks run reliably via `@TransactionalEventListener(AFTER_COMMIT)` + `CompletableFuture` + `TransactionTemplate` (see ADR-1).
 - Idempotency is dual-layer: Caffeine cache (fast path) + database unique constraint (source of truth).
+- **Cancellation** — `OrderCancellationSaga` runs the reverse flow: release inventory, void WMS, and transition to `CANCELLED`, idempotently and synchronously, before dispatch (ADR-7).
 
 ### 🔭 Observability — Three Pillars
 

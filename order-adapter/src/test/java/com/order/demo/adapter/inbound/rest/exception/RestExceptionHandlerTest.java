@@ -1,8 +1,8 @@
 package com.order.demo.adapter.inbound.rest.exception;
 
-import com.order.demo.adapter.inbound.rest.OrderNotFoundException;
 import com.order.demo.application.domain.DuplicateOrderException;
 import com.order.demo.application.domain.InsufficientInventoryException;
+import com.order.demo.application.domain.OrderNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;

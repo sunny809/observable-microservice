@@ -111,4 +111,29 @@ public class WmsRestTemplateAdapter implements WmsPort {
         failed.completeExceptionally(new RuntimeException("WMS service unavailable (RestTemplate)", throwable));
         return failed;
     }
+
+    /**
+     * Voids a previously sent shipment instruction.
+     */
+    @Override
+    @CircuitBreaker(name = "wmsService", fallbackMethod = "handleCancelFallback")
+    @Retry(name = "wmsService")
+    public CompletableFuture<Void> cancelInstruction(WmsShipmentInstruction instruction) {
+        try {
+            restTemplate.postForEntity("/api/wms/shipments/cancel", instruction, Void.class);
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception ex) {
+            log.error("Failed to void WMS instruction for order {}", instruction.getOrderId(), ex);
+            CompletableFuture<Void> failed = new CompletableFuture<>();
+            failed.completeExceptionally(ex);
+            return failed;
+        }
+    }
+
+    public CompletableFuture<Void> handleCancelFallback(WmsShipmentInstruction instruction, Throwable throwable) {
+        log.warn("WMS RestTemplate cancel fallback triggered for order {}", instruction.getOrderId(), throwable);
+        CompletableFuture<Void> failed = new CompletableFuture<>();
+        failed.completeExceptionally(new RuntimeException("WMS service unavailable (RestTemplate)", throwable));
+        return failed;
+    }
 }

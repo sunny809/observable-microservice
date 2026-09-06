@@ -7,9 +7,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class OrderStatusTest {
 
     @Test
-    void testValuesReturnsAllSevenConstants() {
+    void testValuesReturnsAllEightConstants() {
         OrderStatus[] values = OrderStatus.values();
-        assertEquals(7, values.length);
+        assertEquals(8, values.length);
     }
 
     @Test
@@ -21,6 +21,7 @@ class OrderStatusTest {
         assertEquals(OrderStatus.TMS_DISPATCHED, OrderStatus.valueOf("TMS_DISPATCHED"));
         assertEquals(OrderStatus.TMS_REJECTED, OrderStatus.valueOf("TMS_REJECTED"));
         assertEquals(OrderStatus.REJECTED, OrderStatus.valueOf("REJECTED"));
+        assertEquals(OrderStatus.CANCELLED, OrderStatus.valueOf("CANCELLED"));
     }
 
     @Test

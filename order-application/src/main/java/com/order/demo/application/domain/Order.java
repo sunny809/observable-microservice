@@ -170,10 +170,10 @@ public class Order {
 
     /** Legal state transitions for the order saga state machine. */
     private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED_TRANSITIONS = Map.of(
-            OrderStatus.CREATED, EnumSet.of(OrderStatus.WMS_ACKED, OrderStatus.REJECTED),
-            OrderStatus.RESERVED, EnumSet.of(OrderStatus.WMS_ACKED, OrderStatus.REJECTED),
-            OrderStatus.WMS_ACKED, EnumSet.of(OrderStatus.WMS_PICKED, OrderStatus.REJECTED),
-            OrderStatus.WMS_PICKED, EnumSet.of(OrderStatus.TMS_DISPATCHED, OrderStatus.TMS_REJECTED)
+            OrderStatus.CREATED, EnumSet.of(OrderStatus.WMS_ACKED, OrderStatus.REJECTED, OrderStatus.CANCELLED),
+            OrderStatus.RESERVED, EnumSet.of(OrderStatus.WMS_ACKED, OrderStatus.REJECTED, OrderStatus.CANCELLED),
+            OrderStatus.WMS_ACKED, EnumSet.of(OrderStatus.WMS_PICKED, OrderStatus.REJECTED, OrderStatus.CANCELLED),
+            OrderStatus.WMS_PICKED, EnumSet.of(OrderStatus.TMS_DISPATCHED, OrderStatus.TMS_REJECTED, OrderStatus.CANCELLED)
     );
 
     public String getIdempotencyKey() {

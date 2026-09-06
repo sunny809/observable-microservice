@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.order.demo.adapter.inbound.rest.aop.Traced;
+import com.order.demo.application.port.in.CancelOrderCommand;
+import com.order.demo.application.port.in.CancelOrderUseCase;
 import com.order.demo.application.port.in.OrderSummary;
 import com.order.demo.application.port.in.PlaceOrderCommand;
 import com.order.demo.application.port.in.PlaceOrderUseCase;
@@ -47,10 +49,14 @@ import jakarta.validation.Valid;
 public class OrderController {
 
     private final PlaceOrderUseCase placeOrderUseCase;
+    private final CancelOrderUseCase cancelOrderUseCase;
     private final OrderQueryPort orderQueryPort;
 
-    public OrderController(PlaceOrderUseCase placeOrderUseCase, OrderQueryPort orderQueryPort) {
+    public OrderController(PlaceOrderUseCase placeOrderUseCase,
+                           CancelOrderUseCase cancelOrderUseCase,
+                           OrderQueryPort orderQueryPort) {
         this.placeOrderUseCase = placeOrderUseCase;
+        this.cancelOrderUseCase = cancelOrderUseCase;
         this.orderQueryPort = orderQueryPort;
     }
 
@@ -113,6 +119,34 @@ public class OrderController {
         return orderQueryPort.findOrderAt(orderId, time)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Cancels an order that has not yet been dispatched.
+     *
+     * <p>Releases reserved inventory, voids any WMS instruction, and transitions
+     * the order to {@code CANCELLED}.
+     */
+    @PostMapping("/{orderId}/cancel")
+    @Traced(spanName = "order.cancellation")
+    @PreAuthorize("hasAuthority('SCOPE_order:write')")
+    @Operation(summary = "Cancel an order",
+            description = "Cancels an order that has not yet been dispatched, releasing reserved " +
+                    "inventory and voiding any WMS shipment instruction.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order cancelled",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = OrderResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "409", description = "Order not cancellable (dispatched/terminal, or wrong customer)")
+    })
+    public ResponseEntity<OrderResponse> cancelOrder(
+            @PathVariable("orderId") String orderId,
+            @Valid @RequestBody CancelOrderRequest request) {
+        CancelOrderCommand command = new CancelOrderCommand(orderId, request.getReason(), request.getCustomerId());
+        var result = cancelOrderUseCase.cancel(command);
+        var response = new OrderResponse(result.orderId(), result.status(), MDC.get("traceId"));
+        return ResponseEntity.ok(response);
     }
 
 }

@@ -36,12 +36,14 @@ public class WmsMessageQueueAdapter implements WmsPort {
     private static final Logger log = LoggerFactory.getLogger(WmsMessageQueueAdapter.class);
     private final KafkaTemplate<String, WmsShipmentInstruction> kafkaTemplate;
     private final String topic;
+    private final String cancelTopic;
 
     public WmsMessageQueueAdapter(
             KafkaTemplate<String, WmsShipmentInstruction> kafkaTemplate,
             org.springframework.core.env.Environment env) {
         this.kafkaTemplate = kafkaTemplate;
         this.topic = env.getProperty("app.kafka.wms.topic", "wms.shipment.instructions");
+        this.cancelTopic = env.getProperty("app.kafka.wms.cancel-topic", "wms.shipment.cancel");
     }
 
     /**
@@ -69,6 +71,29 @@ public class WmsMessageQueueAdapter implements WmsPort {
                                 instruction.getOrderId(),
                                 sendResult.getRecordMetadata().offset());
                         result.complete(new WmsAck(true, String.valueOf(sendResult.getRecordMetadata().offset())));
+                    }
+                });
+
+        return result;
+    }
+
+    /**
+     * Voids a previously sent shipment instruction by publishing a cancel message
+     * to the WMS cancel topic.
+     */
+    @Override
+    public CompletableFuture<Void> cancelInstruction(WmsShipmentInstruction instruction) {
+        CompletableFuture<Void> result = new CompletableFuture<>();
+
+        kafkaTemplate.send(cancelTopic, instruction.getOrderId(), instruction)
+                .whenComplete((sendResult, ex) -> {
+                    if (ex != null) {
+                        log.error("Failed to send WMS cancel to Kafka for order {}",
+                                instruction.getOrderId(), ex);
+                        result.completeExceptionally(ex);
+                    } else {
+                        log.info("WMS cancel sent to Kafka for order {}", instruction.getOrderId());
+                        result.complete(null);
                     }
                 });
 

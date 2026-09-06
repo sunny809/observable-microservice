@@ -26,5 +26,7 @@ public enum OrderStatus {
     /** TMS rejected or failed; inventory released. */
     TMS_REJECTED,
     /** WMS rejected or failed; inventory released. */
-    REJECTED
+    REJECTED,
+    /** Order cancelled by the customer before dispatch; inventory released and WMS voided. */
+    CANCELLED
 }

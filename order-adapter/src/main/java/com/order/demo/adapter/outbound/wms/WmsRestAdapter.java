@@ -87,4 +87,39 @@ public class WmsRestAdapter implements WmsPort {
         log.warn("WMS fallback triggered for order {}", instruction.getOrderId(), throwable);
         return CompletableFuture.failedFuture(new RuntimeException("WMS service unavailable", throwable));
     }
+
+    /**
+     * Voids a previously sent shipment instruction.
+     *
+     * <p>Called by the cancellation saga. The returned future completes when the
+     * WMS acknowledges the void, or exceptionally if the WMS cannot be reached.
+     */
+    @Override
+    @CircuitBreaker(name = "wmsService", fallbackMethod = "handleCancelFallback")
+    @Retry(name = "wmsService")
+    public CompletableFuture<Void> cancelInstruction(WmsShipmentInstruction instruction) {
+        Span span = tracer.spanBuilder(SpanNames.WMS_SEND).startSpan();
+        try (Scope scope = span.makeCurrent()) {
+            return webClient.post()
+                    .uri("/api/wms/shipments/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(instruction)
+                    .retrieve()
+                    .bodyToMono(Void.class)
+                    .doOnError(ex -> {
+                        span.recordException(ex);
+                        log.error("Failed to void WMS instruction for order {}", instruction.getOrderId(), ex);
+                    })
+                    .doFinally(sig -> span.end())
+                    .toFuture();
+        }
+    }
+
+    /**
+     * Circuit breaker fallback for {@link #cancelInstruction}.
+     */
+    public CompletableFuture<Void> handleCancelFallback(WmsShipmentInstruction instruction, Throwable throwable) {
+        log.warn("WMS cancel fallback triggered for order {}", instruction.getOrderId(), throwable);
+        return CompletableFuture.failedFuture(new RuntimeException("WMS service unavailable", throwable));
+    }
 }

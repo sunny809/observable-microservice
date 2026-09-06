@@ -1,8 +1,8 @@
 package com.order.demo.adapter.inbound.rest.exception;
 
-import com.order.demo.adapter.inbound.rest.OrderNotFoundException;
 import com.order.demo.application.domain.DuplicateOrderException;
 import com.order.demo.application.domain.InsufficientInventoryException;
+import com.order.demo.application.domain.OrderNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import org.slf4j.MDC;
@@ -70,6 +70,19 @@ public class RestExceptionHandler implements Ordered {
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleOrderNotFound(OrderNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
+    /**
+     * Handles illegal domain state transitions — e.g. cancelling an order that
+     * is already dispatched/terminal, or cancelling an order the caller does not own.
+     *
+     * @param ex the illegal state exception
+     * @return 409 CONFLICT with the error message
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of("error", ex.getMessage()));
     }
 

@@ -18,6 +18,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.order.demo.application.domain.OrderStatus;
+import com.order.demo.application.port.in.CancelOrderUseCase;
+import com.order.demo.application.port.in.OrderCancelledResult;
 import com.order.demo.application.port.in.OrderPlacedResult;
 import com.order.demo.application.port.in.OrderSummary;
 import com.order.demo.application.port.in.PlaceOrderUseCase;
@@ -33,16 +35,18 @@ import java.util.Optional;
 class OrderControllerTest {
 
     private PlaceOrderUseCase useCase;
+    private CancelOrderUseCase cancelOrderUseCase;
     private OrderQueryPort orderQueryPort;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         useCase = mock(PlaceOrderUseCase.class);
+        cancelOrderUseCase = mock(CancelOrderUseCase.class);
         orderQueryPort = mock(OrderQueryPort.class);
         when(useCase.placeOrder(any()))
                 .thenReturn(new OrderPlacedResult("ord-123", OrderStatus.CREATED, "mock-trace"));
-        OrderController controller = new OrderController(useCase, orderQueryPort);
+        OrderController controller = new OrderController(useCase, cancelOrderUseCase, orderQueryPort);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .addFilter(new TraceFilter())
                 .build();
@@ -179,6 +183,29 @@ class OrderControllerTest {
                         .content(orderJson("cust-1", "   ", """
                                 {"sku": "SKU-1", "quantity": 5}
                                 """)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/orders/{orderId}/cancel returns 200 with CANCELLED status")
+    void testCancelOrderSuccess() throws Exception {
+        when(cancelOrderUseCase.cancel(any()))
+                .thenReturn(new OrderCancelledResult("ord-123", OrderStatus.CANCELLED, "cancelled"));
+
+        mockMvc.perform(post("/api/v1/orders/ord-123/cancel")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"changed mind\",\"customerId\":\"cust-1\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderId").value("ord-123"))
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/orders/{orderId}/cancel rejects missing reason with 400")
+    void testCancelOrderRejectsMissingReason() throws Exception {
+        mockMvc.perform(post("/api/v1/orders/ord-123/cancel")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"customerId\":\"cust-1\"}"))
                 .andExpect(status().isBadRequest());
     }
 }
